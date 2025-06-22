@@ -1,3 +1,4 @@
+import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import {
   User,
@@ -8,16 +9,16 @@ import {
   Team,
 } from '../entities/index';
 
-export const databaseConfig: TypeOrmModuleOptions = {
+export const databaseConfig = (configService: ConfigService): TypeOrmModuleOptions => ({
   type: 'mysql',
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '3306', 10),
-  username: process.env.DB_USERNAME || 'teamlink_user',
-  password: process.env.DB_PASSWORD || 'teamlink_password',
-  database: process.env.DB_DATABASE || 'teamlink_db',
+  host: configService.get('DB_HOST', 'localhost'),
+  port: configService.get<number>('DB_PORT', 3306),
+  username: configService.get('DB_USERNAME', 'teamlink_user'),
+  password: configService.get('DB_PASSWORD', 'teamlink_password'),
+  database: configService.get('DB_DATABASE', 'teamlink_db'),
   entities: [User, Skill, UserSkill, Project, Application, Team],
-  synchronize: process.env.NODE_ENV !== 'production', // Only for development
-  logging: process.env.NODE_ENV !== 'production',
+  synchronize: configService.get('NODE_ENV') !== 'production', // Only for development
+  logging: configService.get('NODE_ENV') !== 'production',
   migrations: ['dist/migrations/*.js'],
   migrationsTableName: 'migrations',
-}; 
+}); 
