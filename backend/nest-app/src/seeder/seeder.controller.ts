@@ -1,4 +1,4 @@
-import { Controller, Post, Get } from '@nestjs/common';
+import { Controller, Post, Get, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SeederService } from './seeder.service';
 import { BaseResponse } from '../common/dto/base.response';
@@ -20,6 +20,24 @@ export class SeederController {
       return BaseResponse.success(
         stats,
         'Database seeded successfully with demo data'
+      );
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  @Delete('clear')
+  @ApiOperation({ summary: 'Clear all data from database entities' })
+  @ApiResponse({ status: 200, description: 'Database cleared successfully' })
+  @ApiResponse({ status: 500, description: 'Database clearing failed' })
+  async clearDatabase(): Promise<BaseResponse<any>> {
+    try {
+      await this.seederService.clearAllData();
+      const stats = await this.seederService.getSeederStats();
+      
+      return BaseResponse.success(
+        stats,
+        'All database entities cleared successfully'
       );
     } catch (error) {
       throw error;

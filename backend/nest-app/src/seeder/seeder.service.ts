@@ -66,6 +66,17 @@ export class SeederService {
     await this.userRepository.createQueryBuilder().delete().execute();
   }
 
+  async clearAllData(): Promise<void> {
+    try {
+      this.logger.log('Clearing all database entities...', 'SeederService');
+      await this.clearDatabase();
+      this.logger.log('All database entities cleared successfully!', 'SeederService');
+    } catch (error) {
+      this.logger.error('Failed to clear database entities:', error.stack, 'SeederService');
+      throw error;
+    }
+  }
+
   private async seedSkills(): Promise<Skill[]> {
     this.logger.log('Seeding skills...', 'SeederService');
 
