@@ -30,6 +30,8 @@ async function bootstrap() {
     .setDescription('The TeamLink API documentation')
     .setVersion('1.0')
     .addBearerAuth()
+    .addTag('health', 'Health check endpoints')
+    .addTag('seeder', 'Database seeding endpoints')
     .addTag('auth', 'Authentication endpoints')
     .addTag('users', 'User management endpoints')
     .addTag('projects', 'Project management endpoints')

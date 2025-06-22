@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { CommonModule } from './common/common.module';
+import { SeederModule } from './seeder/seeder.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { databaseConfig } from './config/database.config';
 
@@ -18,6 +19,7 @@ import { databaseConfig } from './config/database.config';
       inject: [ConfigService],
     }),
     CommonModule,
+    SeederModule,
   ],
   controllers: [AppController],
   providers: [],

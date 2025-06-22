@@ -84,12 +84,35 @@ curl http://localhost:3000/api/health
 open http://localhost:3000/api/health
 ```
 
+### 5. Seed Demo Data (Optional)
+
+Populate the database with realistic demo data:
+
+```bash
+# Seed the database with demo data
+curl -X POST http://localhost:3000/api/seeder/seed
+
+# Check seeding statistics
+curl http://localhost:3000/api/seeder/stats
+```
+
+This will create:
+- **7 Demo Users** (developers, designers, project managers)
+- **15 Skills** (JavaScript, React, Python, UI/UX Design, etc.)
+- **29 User-Skill Relations** with different proficiency levels
+- **6 Sample Projects** (E-commerce, Mobile App, AI Dashboard, etc.)
+- **13 Applications** with different statuses (pending, accepted, rejected)
+- **10 Team Members** across various projects
+
 ## 📋 Available Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/health` | GET | Health check |
+| `/api/config` | GET | Configuration check |
 | `/api/docs` | GET | Swagger API documentation |
+| `/api/seeder/seed` | POST | Seed database with demo data |
+| `/api/seeder/stats` | GET | Get database record counts |
 
 ## 🛠️ Development Workflow
 
