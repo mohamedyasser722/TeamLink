@@ -1,0 +1,59 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./backend/nest-app
+      dockerfile: Dockerfile.dev
+    image: teamlink-backend:dev
+    container_name: teamlink-api
+    restart: unless-stopped
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USERNAME=teamlink_user
+      - DB_PASSWORD=teamlink_password
+      - DB_DATABASE=teamlink_db
+      - NODE_ENV=development
+    volumes:
+      - ./backend/nest-app:/usr/src/app # keep this for live reload
+      - /usr/src/app/node_modules # mount an anonymous volume to prevent override
+    ports:
+      - '3000:3000'
+      - '9229:9229'
+    command: sh -c "npm install && npm run start:debug"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - teamlink-network
+
+  mysql:
+    image: mysql:8.0
+    container_name: teamlink-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: teamlink_db
+      MYSQL_USER: teamlink_user
+      MYSQL_PASSWORD: teamlink_password
+    ports:
+      - '3306:3306'
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot_password"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - teamlink-network
+
+volumes:
+  mysql-data:
+
+networks:
+  teamlink-network:
+    driver: bridge 

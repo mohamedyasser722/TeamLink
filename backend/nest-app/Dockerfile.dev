@@ -1,0 +1,25 @@
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /usr/src/app
+
+# Set environment variables
+ENV NODE_ENV=development
+ENV NODE_OPTIONS="--max-old-space-size=4096"
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install \
+    && npm install -g nodemon \
+    && npm install -g @nestjs/cli 
+
+# Copy app source (will be overridden by volume mount in development)
+COPY . .
+
+# Expose NestJS default port
+EXPOSE 3000
+
+# Start with nodemon for live reload
+CMD ["nodemon", "--legacy-watch", "--watch", "src", "--ext", "ts,js", "--exec", "npm", "run", "start:debug"] 
