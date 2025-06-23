@@ -13,7 +13,7 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install \
     && npm install -g nodemon \
-    && npm install -g @nestjs/cli 
+    && npm install -g @nestjs/cli
 
 # Copy app source (will be overridden by volume mount in development)
 COPY . .
