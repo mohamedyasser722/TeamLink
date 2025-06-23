@@ -6,7 +6,7 @@ import {
   KeycloakConnectModule,
   RoleGuard,
 } from 'nest-keycloak-connect';
-import { AuthController } from './auth.controller';
+import { KeyclockController } from './keyclock.controller';
 import { KeycloakService } from './keyclock.service';
 
 @Module({
@@ -24,7 +24,7 @@ import { KeycloakService } from './keyclock.service';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
+  controllers: [KeyclockController],
   providers: [
     KeycloakService,
     {

@@ -2,8 +2,8 @@ import { Controller, Get } from '@nestjs/common';
 import { AuthenticatedUser, Public, Roles } from 'nest-keycloak-connect';
 import { KeycloakService } from './keyclock.service';
 
-@Controller('auth')
-export class AuthController {
+@Controller('keyclock')
+export class KeyclockController {
   constructor(private readonly keycloakService: KeycloakService) {}
 
   /**

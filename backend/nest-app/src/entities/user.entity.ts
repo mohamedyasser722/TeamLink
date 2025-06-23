@@ -33,6 +33,12 @@ export class User {
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 
+  @Column({ type: 'timestamp', nullable: true, name: 'last_login_at' })
+  lastLoginAt: Date;
+
+  @Column({ type: 'boolean', default: true, name: 'is_active' })
+  isActive: boolean;
+
   // Relationships
   @OneToMany(() => UserSkill, (userSkill) => userSkill.user)
   userSkills: UserSkill[];

@@ -7,6 +7,7 @@ import { SeederModule } from './seeder/seeder.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { databaseConfig } from './config/database.config';
 import { KeycloakModule } from './keyclock/keyclock.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { KeycloakModule } from './keyclock/keyclock.module';
     CommonModule,
     SeederModule,
     KeycloakModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [],
