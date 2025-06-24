@@ -2,9 +2,11 @@ import { Controller, Post, Get, Delete } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SeederService } from './seeder.service';
 import { BaseResponse } from '../common/dto/base.response';
+import { Public } from 'nest-keycloak-connect';
 
 @ApiTags('seeder')
 @Controller('seeder')
+@Public()
 export class SeederController {
   constructor(private readonly seederService: SeederService) {}
 

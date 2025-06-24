@@ -107,9 +107,9 @@ export class SeederService {
 
     const usersData = [
       {
-        keycloakId: 'kc-001',
-        username: 'john_doe',
-        email: 'john@example.com',
+        keycloakId: '03135245-86ab-4a7b-a035-cacb7cec527d',
+        username: 'mohamed123',
+        email: 'chopyasser722@gmail.com',
         bio: 'Full-stack developer with 5 years of experience in React and Node.js. Passionate about building scalable web applications.',
         avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=john',
       },

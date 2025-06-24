@@ -20,6 +20,7 @@ COPY . .
 
 # Expose NestJS default port
 EXPOSE 3000
+EXPOSE 9229
 
 # Start with nodemon for live reload
 CMD ["nodemon", "--legacy-watch", "--watch", "src", "--ext", "ts,js", "--exec", "npm", "run", "start:debug"] 

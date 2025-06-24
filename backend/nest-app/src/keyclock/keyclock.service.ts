@@ -64,9 +64,12 @@ import {
       username: string;
     }) {
       const token = await this.getAdminToken();
+
+      this.logger.debug(token)
   
       const url = `${this.keycloakUrl}/admin/realms/${this.realm}/users`;
   
+      this.logger.debug(url)
       try {
         const res = await axios.post(
           url,
@@ -115,12 +118,30 @@ import {
   
       try {
         // 🔍 Get role details by name
-        const roleUrl = `${baseUrl}/admin/realms/${realm}/roles/${roleName}`;
-        const roleRes = await axios.get(roleUrl, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-  
-        const role = roleRes.data;
+        const roleUrl = `${baseUrl}/admin/realms/${realm}/users/${userId}/role-mappings/realm/available`;
+
+        this.logger.debug(`Fetching role from: ${roleUrl}`)
+        
+        let role;
+        try {
+          const roleRes = await axios.get(roleUrl, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const availableRoles = roleRes.data;
+          this.logger.debug(`Available roles:`, availableRoles);
+          
+          // Find the specific role by name
+          role = availableRoles.find(r => r.name === roleName);
+          this.logger.debug(`Found role "${roleName}":`, role);
+        } catch (roleError) {
+          this.logger.error(`❌ Failed to fetch available roles:`, roleError?.response?.data || roleError.message);
+          this.logger.error('Role fetch status:', roleError?.response?.status);
+          throw new Error(`Failed to fetch available roles`);
+        }
+        
+        if (!role || !role.id) {
+          throw new Error(`Role "${roleName}" not found in available roles`);
+        }
   
         // ➕ Assign role to user
         const mapUrl = `${baseUrl}/admin/realms/${realm}/users/${userId}/role-mappings/realm`;
@@ -146,6 +167,9 @@ import {
           '❌ Failed to assign role:',
           error?.response?.data || error.message,
         );
+        this.logger.error('Status:', error?.response?.status);
+        this.logger.error('Status Text:', error?.response?.statusText);
+        this.logger.error('URL:', error?.config?.url);
         throw new ApiException(
           'Failed to assign role to user',
           500,

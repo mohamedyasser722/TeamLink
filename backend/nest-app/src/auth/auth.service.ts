@@ -64,7 +64,13 @@ import {
           password: registerDto.password,
           username: registerDto.username,
         });
-  
+
+        this.logger.log(`Keycloak user created with ID: ${kcUserId}`);
+        this.logger.log(`Role assigned to user: ${registerDto.role}`);
+
+        // Assign role to user
+        await this.keycloakService.assignRoleToUser(kcUserId, registerDto.role);
+
         // Create user in local database
         const user = this.userRepository.create({
           ...registerDto,
