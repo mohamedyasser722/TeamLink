@@ -1,180 +1,100 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import Navigation from '@/components/Navigation';
-import { projectsApi, teamsApi } from '@/lib/api';
-import { Project, TeamMember } from '@/types/project';
+import { projectsApi } from '@/lib/api';
+import { Project } from '@/types/project';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-export default function ProjectDetailPage() {
-  const params = useParams();
+const updateProjectSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
+  description: z.string().min(1, 'Description is required').max(1000, 'Description must be less than 1000 characters'),
+  status: z.enum(['open', 'in_progress', 'closed'], {
+    required_error: 'Status is required',
+  }),
+});
+
+type UpdateProjectForm = z.infer<typeof updateProjectSchema>;
+
+export default function EditProjectPage() {
+  const { user } = useAuth();
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
-  const [project, setProject] = useState<Project | null>(null);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [teamLoading, setTeamLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [applyingTo, setApplyingTo] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
-
+  const params = useParams();
   const projectId = params.id as string;
 
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<UpdateProjectForm>({
+    resolver: zodResolver(updateProjectSchema),
+  });
+
   useEffect(() => {
-    if (isAuthenticated && projectId) {
-      fetchProject();
+    // Redirect if not a leader
+    if (user?.role !== 'leader') {
+      router.push('/dashboard');
+      return;
     }
-  }, [isAuthenticated, projectId]);
+    fetchProject();
+  }, [user?.role, router, projectId]);
 
   const fetchProject = async () => {
     try {
       setLoading(true);
-      setError('');
-      const data = await projectsApi.getProjectById(projectId);
-      setProject(data);
+      const projectData = await projectsApi.getProjectById(projectId);
+      setProject(projectData);
       
-      // Fetch detailed team member information
-      await fetchTeamMembers(projectId);
-    } catch (err: any) {
-      console.error('Error fetching project:', err);
-      setError(err.response?.data?.message || 'Failed to load project');
+      // Set form values
+      setValue('title', projectData.title);
+      setValue('description', projectData.description);
+      setValue('status', projectData.status);
+    } catch (error: any) {
+      console.error('Error fetching project:', error);
+      setError('Failed to load project');
     } finally {
       setLoading(false);
     }
   };
 
-  const fetchTeamMembers = async (projectId: string) => {
+  const onSubmit = async (data: UpdateProjectForm) => {
     try {
-      setTeamLoading(true);
-      const teamData = await teamsApi.getTeamMembers(projectId);
-      setTeamMembers(teamData);
-    } catch (err: any) {
-      console.error('Error fetching team members:', err);
-      // Don't set error for team members, just log it
+      setIsSubmitting(true);
+      setError(null);
+      
+      await projectsApi.updateProject(projectId, data);
+      
+      // Redirect back to my projects
+      router.push('/projects/my-projects');
+    } catch (error: any) {
+      console.error('Error updating project:', error);
+      setError(error?.response?.data?.message || 'Failed to update project');
     } finally {
-      setTeamLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  const handleApply = async () => {
-    if (!project || user?.role !== 'freelancer') {
-      setError('Only freelancers can apply to projects');
-      return;
-    }
-
-    try {
-      setApplyingTo(true);
-      setError('');
-      setSuccessMessage('');
-      
-      await projectsApi.applyToProject(project.id);
-      
-      setSuccessMessage('Application submitted successfully!');
-      
-      // Refresh project to show updated application status
-      await fetchProject();
-      
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err: any) {
-      console.error('Error applying to project:', err);
-      const errorMessage = err.response?.data?.message || 'Failed to apply to project';
-      setError(errorMessage);
-      setTimeout(() => setError(''), 5000);
-    } finally {
-      setApplyingTo(false);
-    }
-  };
-
-  const hasUserApplied = () => {
-    if (!project || !user) return false;
-    return project.applications.some(app => app.user?.id === user.id);
-  };
-
-  const getUserApplication = () => {
-    if (!project || !user) return null;
-    return project.applications.find(app => app.user?.id === user.id);
-  };
-
-  const isProjectOwner = () => {
-    return project?.owner.id === user?.id;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return 'bg-green-100 text-green-800';
-      case 'in_progress':
-        return 'bg-blue-100 text-blue-800';
-      case 'closed':
-        return 'bg-gray-100 text-gray-800';
-      case 'completed':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getApplicationStatusColor = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-  };
-
-  if (!isAuthenticated) {
+  // Show loading while user role is being determined or while fetching project
+  if (!user || loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-screen">
-          <p className="text-gray-600">Please log in to view project details.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading project details...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !project) {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-8">
-              <p className="text-red-800 text-lg">{error}</p>
-              <button
-                onClick={() => router.back()}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-              >
-                Go Back
-              </button>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="animate-pulse">
+              <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="h-10 bg-gray-200 rounded mb-6"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
+              <div className="h-32 bg-gray-200 rounded mb-6"></div>
             </div>
           </div>
         </div>
@@ -182,18 +102,23 @@ export default function ProjectDetailPage() {
     );
   }
 
+  // Don't render anything if user is not a leader (will be redirected)
+  if (user.role !== 'leader') {
+    return null;
+  }
+
   if (!project) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Navigation />
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <p className="text-gray-600">Project not found.</p>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white shadow rounded-lg p-6 text-center">
+            <h1 className="text-2xl font-bold text-gray-900 mb-4">Project Not Found</h1>
+            <p className="text-gray-600 mb-4">The project you're looking for doesn't exist or you don't have permission to edit it.</p>
             <button
-              onClick={() => router.back()}
-              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              onClick={() => router.push('/projects/my-projects')}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
-              Go Back
+              Back to My Projects
             </button>
           </div>
         </div>
@@ -201,234 +126,93 @@ export default function ProjectDetailPage() {
     );
   }
 
-  const userApplication = getUserApplication();
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      
-      <main className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Back Button */}
-        <div className="mb-6">
-          <button
-            onClick={() => router.back()}
-            className="inline-flex items-center text-blue-600 hover:text-blue-800"
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Back to Projects
-          </button>
-        </div>
-
-        {/* Success/Error Messages */}
-        {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mb-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
-            {successMessage}
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
-          <div className="lg:col-span-2">
-            {/* Project Header */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                    {project.title}
-                  </h1>
-                  <div className="flex items-center text-sm text-gray-500 mb-4">
-                    <img
-                      src={project.owner.avatarUrl}
-                      alt={project.owner.username}
-                      className="w-6 h-6 rounded-full mr-2"
-                    />
-                    <span>Created by <span className="font-medium">{project.owner.username}</span></span>
-                    <span className="mx-2">•</span>
-                    <span>{formatDate(project.createdAt)}</span>
-                  </div>
-                </div>
-                <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusColor(project.status)}`}>
-                  {project.status.replace('_', ' ').toUpperCase()}
-                </span>
-              </div>
-
-              <div className="prose max-w-none">
-                <p className="text-gray-700 leading-relaxed">
-                  {project.description}
-                </p>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="mt-6 flex items-center gap-4">
-                {isProjectOwner() ? (
-                  <span className="px-4 py-2 bg-blue-100 text-blue-800 rounded-md text-sm font-medium">
-                    You own this project
-                  </span>
-                ) : hasUserApplied() ? (
-                  <span className={`px-4 py-2 text-sm font-medium rounded-md border ${getApplicationStatusColor(userApplication?.status || '')}`}>
-                    Application {userApplication?.status?.toUpperCase()}
-                  </span>
-                ) : project.status === 'open' && user?.role === 'freelancer' ? (
-                  <button
-                    onClick={handleApply}
-                    disabled={applyingTo}
-                    className="inline-flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                  >
-                    {applyingTo ? (
-                      <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Applying...
-                      </>
-                    ) : (
-                      'Apply to Project'
-                    )}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-
-            {/* Team Members */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">
-                Team Members ({teamMembers.length || project.team.length})
-              </h2>
-              
-              {teamLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-600">Loading team members...</p>
-                </div>
-              ) : teamMembers.length > 0 ? (
-                <div className="space-y-4">
-                  {teamMembers.map((member) => (
-                    <div key={member.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                      <div className="flex items-start space-x-4">
-                        <img
-                          src={member.user.avatarUrl}
-                          alt={member.user.username}
-                          className="w-12 h-12 rounded-full flex-shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <div>
-                              <h4 className="text-lg font-medium text-gray-900">{member.user.username}</h4>
-                              <p className="text-sm font-medium text-blue-600">{member.roleTitle}</p>
-                            </div>
-                            <div className="text-sm text-gray-500 text-right">
-                              <p>Joined</p>
-                              <p>{formatDate(member.joinedAt)}</p>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-600 leading-relaxed">
-                            {member.user.bio}
-                          </p>
-                          <div className="mt-2 flex items-center text-xs text-gray-500">
-                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                            </svg>
-                            {member.user.email}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : project.team.length > 0 ? (
-                <div className="space-y-3">
-                  {project.team.map((member) => (
-                    <div key={member.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center">
-                        <img
-                          src={member.user?.avatarUrl}
-                          alt={member.user?.username}
-                          className="w-10 h-10 rounded-full mr-3"
-                        />
-                        <div>
-                          <p className="font-medium text-gray-900">{member.user?.username}</p>
-                          <p className="text-sm text-gray-500">{member.roleTitle}</p>
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        Joined {formatDate(member.joinedAt)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-gray-500 text-center py-4">No team members yet.</p>
-              )}
-            </div>
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white shadow rounded-lg">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h1 className="text-2xl font-bold text-gray-900">Edit Project</h1>
+            <p className="mt-1 text-sm text-gray-600">
+              Update your project details and status
+            </p>
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            {/* Project Stats */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Project Stats</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Applications</span>
-                  <span className="text-lg font-bold text-gray-900">{project.applications.length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Team Size</span>
-                  <span className="text-lg font-bold text-gray-900">{teamMembers.length || project.team.length}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Status</span>
-                  <span className="text-lg font-bold text-gray-900 capitalize">{project.status.replace('_', ' ')}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Applications (Only visible to project owner) */}
-            {isProjectOwner() && (
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Applications ({project.applications.length})
-                </h3>
-                {project.applications.length > 0 ? (
-                  <div className="space-y-3">
-                    {project.applications.map((application) => (
-                      <div key={application.id} className="p-3 border rounded-lg">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center">
-                            <img
-                              src={application.user?.avatarUrl}
-                              alt={application.user?.username}
-                              className="w-8 h-8 rounded-full mr-2"
-                            />
-                            <span className="font-medium text-sm">{application.user?.username}</span>
-                          </div>
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${getApplicationStatusColor(application.status)}`}>
-                            {application.status.toUpperCase()}
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          Applied {formatDate(application.createdAt)}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-500 text-center py-4 text-sm">No applications yet.</p>
-                )}
+          <form onSubmit={handleSubmit(onSubmit)} className="px-6 py-6 space-y-6">
+            {error && (
+              <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                <div className="text-sm text-red-600">{error}</div>
               </div>
             )}
-          </div>
+
+            <div>
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
+                Project Title *
+              </label>
+              <input
+                {...register('title')}
+                type="text"
+                id="title"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                placeholder="Enter project title"
+              />
+              {errors.title && (
+                <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+                Project Description *
+              </label>
+              <textarea
+                {...register('description')}
+                id="description"
+                rows={6}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                placeholder="Describe your project, required skills, and what you're looking for in team members..."
+              />
+              {errors.description && (
+                <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+              )}
+            </div>
+
+            <div>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                Project Status *
+              </label>
+              <select
+                {...register('status')}
+                id="status"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+              >
+                <option value="open">Open - Accepting applications</option>
+                <option value="in_progress">In Progress - Team assembled, work started</option>
+                <option value="closed">Closed - Project completed or cancelled</option>
+              </select>
+              {errors.status && (
+                <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => router.push('/projects/my-projects')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Updating...' : 'Update Project'}
+              </button>
+            </div>
+          </form>
         </div>
-      </main>
+      </div>
     </div>
   );
 } 

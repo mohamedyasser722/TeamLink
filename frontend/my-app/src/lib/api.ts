@@ -80,6 +80,37 @@ export const projectsApi = {
   async getMyApplications() {
     const response = await api.get('/projects/my-applications');
     return response.data.data;
+  },
+
+  async getMyProjects() {
+    const response = await api.get('/projects/my-projects');
+    return response.data.data;
+  },
+
+  // Leader-specific functions
+  async createProject(projectData: { title: string; description: string }) {
+    const response = await api.post('/projects', projectData);
+    return response.data.data;
+  },
+
+  async updateProject(projectId: string, projectData: { title?: string; description?: string; status?: string }) {
+    const response = await api.put(`/projects/${projectId}`, projectData);
+    return response.data.data;
+  },
+
+  async deleteProject(projectId: string) {
+    const response = await api.delete(`/projects/${projectId}`);
+    return response.data;
+  },
+
+  async getProjectApplications(projectId: string) {
+    const response = await api.get(`/projects/${projectId}/applications`);
+    return response.data.data;
+  },
+
+  async updateApplicationStatus(projectId: string, applicationId: string, statusData: { status: string; roleTitle?: string }) {
+    const response = await api.put(`/projects/${projectId}/applications/${applicationId}/status`, statusData);
+    return response.data.data;
   }
 };
 
@@ -92,6 +123,53 @@ export const teamsApi = {
 
   async getMyTeamMemberships() {
     const response = await api.get('/teams/my-memberships');
+    return response.data.data;
+  },
+
+  // Leader-specific team management
+  async updateTeamMember(projectId: string, teamId: string, memberData: { roleTitle: string }) {
+    const response = await api.put(`/teams/projects/${projectId}/members/${teamId}`, memberData);
+    return response.data.data;
+  },
+
+  async removeTeamMember(projectId: string, teamId: string) {
+    const response = await api.delete(`/teams/projects/${projectId}/members/${teamId}`);
+    return response.data;
+  }
+};
+
+// Users API
+export const usersApi = {
+  async getProfile() {
+    const response = await api.get('/users/profile');
+    return response.data.data;
+  },
+
+  async updateProfile(profileData: { bio?: string; avatarUrl?: string }) {
+    const response = await api.put('/users/profile', profileData);
+    return response.data.data;
+  },
+
+  async getMySkills() {
+    const response = await api.get('/users/skills/my-skills');
+    return response.data.data;
+  },
+
+  async addSkill(skillData: { skillId: string; level: 'beginner' | 'intermediate' | 'expert' }) {
+    const response = await api.post('/users/skills', skillData);
+    return response.data.data;
+  },
+
+  async removeSkill(skillId: string) {
+    const response = await api.delete(`/users/skills/${skillId}`);
+    return response.data;
+  }
+};
+
+// Skills API
+export const skillsApi = {
+  async getAllSkills() {
+    const response = await api.get('/skills');
     return response.data.data;
   }
 };

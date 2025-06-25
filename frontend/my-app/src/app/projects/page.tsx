@@ -74,11 +74,11 @@ export default function ProjectsPage() {
   };
 
   const hasUserApplied = (project: Project) => {
-    return project.applications.some(app => app.userId === user?.id);
+    return project.applications?.some(app => app.userId === user?.id) || false;
   };
 
   const getUserApplication = (project: Project) => {
-    return project.applications.find(app => app.userId === user?.id);
+    return project.applications?.find(app => app.userId === user?.id);
   };
 
   if (!isAuthenticated) {
@@ -150,7 +150,7 @@ export default function ProjectsPage() {
                         </Link>
                       </h3>
                       <div className="flex items-center text-sm text-gray-500">
-                        {project.owner.avatarUrl ? (
+                        {project.owner?.avatarUrl ? (
                           <img
                             src={project.owner.avatarUrl}
                             alt={project.owner.username}
@@ -159,11 +159,11 @@ export default function ProjectsPage() {
                         ) : (
                           <div className="w-5 h-5 rounded-full bg-gray-300 mr-2 flex items-center justify-center">
                             <span className="text-xs text-gray-600">
-                              {project.owner.username.charAt(0).toUpperCase()}
+                              {project.owner?.username?.charAt(0).toUpperCase() || '?'}
                             </span>
                           </div>
                         )}
-                        <span>by {project.owner.username}</span>
+                        <span>by {project.owner?.username || 'Unknown'}</span>
                       </div>
                     </div>
                     <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -180,8 +180,8 @@ export default function ProjectsPage() {
                   </p>
 
                   <div className="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>{project.applications.length} applications</span>
-                    <span>{project.team.length} team members</span>
+                    <span>{project.applications?.length || 0} applications</span>
+                    <span>{project.team?.length || 0} team members</span>
                   </div>
 
                   <div className="flex items-center justify-between">

@@ -18,19 +18,36 @@ import { AddSkillDto } from './dtos/add-skill.dto';
 import { BaseResponse } from '../common/dto/base.response';
 import { User } from '../entities/user.entity';
 import { UserSkill } from '../entities/user-skill.entity';
+import { KeycloakService } from '../keyclock/keyclock.service';
 
 @ApiTags('users')
 @Controller('users')
 @ApiBearerAuth()
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly keycloakService: KeycloakService,
+  ) {}
 
   @Get('profile')
   @ApiOperation({ summary: 'Get my profile' })
   @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
-  async getMyProfile(@AuthenticatedUser() keycloakUser: any): Promise<BaseResponse<User>> {
+  async getMyProfile(@AuthenticatedUser() keycloakUser: any): Promise<BaseResponse<any>> {
     const user = await this.usersService.getOrCreateUser(keycloakUser);
-    return BaseResponse.success(user, 'Profile retrieved successfully');
+    const userInfo = this.keycloakService.extractUserInfo(keycloakUser);
+    
+    // Determine role based on Keycloak roles
+    let role = 'freelancer'; // default
+    if (userInfo?.roles?.includes('leader')) {
+      role = 'leader';
+    }
+    
+    const userWithRole = {
+      ...user,
+      role,
+    };
+    
+    return BaseResponse.success(userWithRole, 'Profile retrieved successfully');
   }
 
   @Put('profile')

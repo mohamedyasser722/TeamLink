@@ -4,10 +4,72 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import Navigation from '@/components/Navigation';
+import { useEffect, useState } from 'react';
+import { projectsApi, teamsApi, usersApi } from '@/lib/api';
 
 export default function DashboardPage() {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
+  
+  // Dashboard stats state
+  const [stats, setStats] = useState({
+    applications: 0,
+    teams: 0,
+    skills: 0,
+    projects: 0, // for leaders
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      router.push('/auth/login');
+    }
+  }, [loading, isAuthenticated, router]);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      fetchDashboardStats();
+    }
+  }, [isAuthenticated, user]);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setStatsLoading(true);
+      
+      // Fetch skills (for both roles)
+      const skillsPromise = usersApi.getMySkills();
+      
+      // Fetch teams (for both roles)
+      const teamsPromise = teamsApi.getMyTeamMemberships();
+      
+      // Fetch applications or projects based on role
+      let applicationsOrProjectsPromise;
+      if (user?.role === 'leader') {
+        applicationsOrProjectsPromise = projectsApi.getMyProjects();
+      } else {
+        applicationsOrProjectsPromise = projectsApi.getMyApplications();
+      }
+
+      const [skills, teams, applicationsOrProjects] = await Promise.all([
+        skillsPromise,
+        teamsPromise,
+        applicationsOrProjectsPromise,
+      ]);
+
+
+
+      setStats({
+        skills: skills.length,
+        teams: teams.length,
+        applications: user?.role === 'freelancer' ? applicationsOrProjects.length : 0,
+        projects: user?.role === 'leader' ? applicationsOrProjects.length : 0,
+      });
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setStatsLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -21,7 +83,6 @@ export default function DashboardPage() {
   }
 
   if (!isAuthenticated) {
-    router.push('/auth/login');
     return null;
   }
 
@@ -54,7 +115,13 @@ export default function DashboardPage() {
                     <dt className="text-sm font-medium text-gray-500 truncate">
                       {user?.role === 'leader' ? 'Projects Created' : 'Applications Sent'}
                     </dt>
-                    <dd className="text-lg font-medium text-gray-900">0</dd>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {statsLoading ? (
+                        <div className="animate-pulse bg-gray-200 h-6 w-8 rounded"></div>
+                      ) : (
+                        user?.role === 'leader' ? stats.projects : stats.applications
+                      )}
+                    </dd>
                   </dl>
                 </div>
               </div>
@@ -74,7 +141,13 @@ export default function DashboardPage() {
                     <dt className="text-sm font-medium text-gray-500 truncate">
                       Teams Joined
                     </dt>
-                    <dd className="text-lg font-medium text-gray-900">0</dd>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {statsLoading ? (
+                        <div className="animate-pulse bg-gray-200 h-6 w-8 rounded"></div>
+                      ) : (
+                        stats.teams
+                      )}
+                    </dd>
                   </dl>
                 </div>
               </div>
@@ -95,7 +168,11 @@ export default function DashboardPage() {
                       Skills
                     </dt>
                     <dd className="text-lg font-medium text-gray-900">
-                      {user?.skills?.length || 0}
+                      {statsLoading ? (
+                        <div className="animate-pulse bg-gray-200 h-6 w-8 rounded"></div>
+                      ) : (
+                        stats.skills
+                      )}
                     </dd>
                   </dl>
                 </div>
@@ -110,18 +187,30 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {user?.role === 'leader' ? (
               <>
-                <button className="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-                  Create New Project
-                </button>
-                <button className="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors">
-                  Manage Applications
-                </button>
-                <button className="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors">
-                  View Teams
-                </button>
-                <button className="bg-gray-600 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors">
+                <Link
+                  href="/projects/create"
+                  className="bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-colors text-center"
+                >
+                  Create Project
+                </Link>
+                <Link
+                  href="/projects/my-projects"
+                  className="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors text-center"
+                >
+                  My Projects
+                </Link>
+                <Link
+                  href="/teams"
+                  className="bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors text-center"
+                >
+                  My Teams
+                </Link>
+                <Link
+                  href="/profile"
+                  className="bg-gray-600 text-white px-4 py-3 rounded-lg hover:bg-gray-700 transition-colors text-center"
+                >
                   Profile Settings
-                </button>
+                </Link>
               </>
             ) : (
               <>
