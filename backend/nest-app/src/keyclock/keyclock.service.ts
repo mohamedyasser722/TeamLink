@@ -111,72 +111,153 @@ import {
       }
     }
   
-    async assignRoleToUser(userId: string, roleName: string) {
-      const token = await this.getAdminToken();
-      const realm = this.realm;
-      const baseUrl = this.keycloakUrl;
+    // async assignRoleToUser(userId: string, roleName: string) {
+    //   const token = await this.getAdminToken();
+    //   const realm = this.realm;
+    //   const baseUrl = this.keycloakUrl;
   
-      try {
-        // 🔍 Get role details by name
-        const roleUrl = `${baseUrl}/admin/realms/${realm}/users/${userId}/role-mappings/realm/available`;
+    //   try {
+    //     // 🔍 Get role details by name
+    //     const roleUrl = `${baseUrl}/admin/realms/${realm}/users/${userId}/role-mappings/realm/available`;
 
-        this.logger.debug(`Fetching role from: ${roleUrl}`)
+    //     this.logger.debug(`Fetching role from: ${roleUrl}`)
         
-        let role;
-        try {
-          const roleRes = await axios.get(roleUrl, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const availableRoles = roleRes.data;
-          this.logger.debug(`Available roles:`, availableRoles);
+    //     let role;
+    //     try {
+    //       const roleRes = await axios.get(roleUrl, {
+    //         headers: { Authorization: `Bearer ${token}` },
+    //       });
+    //       const availableRoles = roleRes.data;
+    //       this.logger.debug(`Available roles:`, availableRoles);
           
-          // Find the specific role by name
-          role = availableRoles.find(r => r.name === roleName);
-          this.logger.debug(`Found role "${roleName}":`, role);
-        } catch (roleError) {
-          this.logger.error(`❌ Failed to fetch available roles:`, roleError?.response?.data || roleError.message);
-          this.logger.error('Role fetch status:', roleError?.response?.status);
-          throw new Error(`Failed to fetch available roles`);
-        }
+    //       // Find the specific role by name
+    //       role = availableRoles.find(r => r.name === roleName);
+    //       this.logger.debug(`Found role "${roleName}":`, role);
+    //     } catch (roleError) {
+    //       this.logger.error(`❌ Failed to fetch available roles:`, roleError?.response?.data || roleError.message);
+    //       this.logger.error('Role fetch status:', roleError?.response?.status);
+    //       throw new Error(`Failed to fetch available roles`);
+    //     }
         
-        if (!role || !role.id) {
-          throw new Error(`Role "${roleName}" not found in available roles`);
-        }
+    //     if (!role || !role.id) {
+    //       throw new Error(`Role "${roleName}" not found in available roles`);
+    //     }
   
-        // ➕ Assign role to user
-        const mapUrl = `${baseUrl}/admin/realms/${realm}/users/${userId}/role-mappings/realm`;
-        await axios.post(
-          mapUrl,
-          [
-            {
-              id: role.id,
-              name: role.name,
-            },
-          ],
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          },
-        );
+    //     // ➕ Assign role to user
+    //     const mapUrl = `${baseUrl}/admin/realms/${realm}/users/${userId}/role-mappings/realm`;
+    //     await axios.post(
+    //       mapUrl,
+    //       [
+    //         {
+    //           id: role.id,
+    //           name: role.name,
+    //         },
+    //       ],
+    //       {
+    //         headers: {
+    //           Authorization: `Bearer ${token}`,
+    //           'Content-Type': 'application/json',
+    //         },
+    //       },
+    //     );
   
-        this.logger.log(`✅ Assigned role "${roleName}" to user: ${userId}`);
-      } catch (error) {
-        this.logger.error(
-          '❌ Failed to assign role:',
-          error?.response?.data || error.message,
-        );
-        this.logger.error('Status:', error?.response?.status);
-        this.logger.error('Status Text:', error?.response?.statusText);
-        this.logger.error('URL:', error?.config?.url);
-        throw new ApiException(
-          'Failed to assign role to user',
-          500,
-          'ERR_ROLE_ASSIGN',
-        );
-      }
+    //     this.logger.log(`✅ Assigned role "${roleName}" to user: ${userId}`);
+    //   } catch (error) {
+    //     this.logger.error(
+    //       '❌ Failed to assign role:',
+    //       error?.response?.data || error.message,
+    //     );
+    //     this.logger.error('Status:', error?.response?.status);
+    //     this.logger.error('Status Text:', error?.response?.statusText);
+    //     this.logger.error('URL:', error?.config?.url);
+    //     throw new ApiException(
+    //       'Failed to assign role to user',
+    //       500,
+    //       'ERR_ROLE_ASSIGN',
+    //     );
+    //   }
+    // }
+
+
+async assignRoleToUser(userId: string, roleName: string) {
+  const token = await this.getAdminToken();
+  const realm = this.realm;
+  const baseUrl = this.keycloakUrl;
+
+  try {
+    // Step 1: Fetch the client ID by client name
+    const clientUrl = `${baseUrl}/admin/realms/${realm}/clients`;
+    const clientRes = await axios.get(clientUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const client = clientRes.data.find((client) => client.clientId === 'MohamedTestBackend');
+    if (!client) {
+      throw new Error(`Client not found`);
     }
+
+    const clientId = client.id;
+
+    // Step 2: Check if the client role exists
+    const rolesUrl = `${baseUrl}/admin/realms/${realm}/clients/${clientId}/roles`;
+    const rolesRes = await axios.get(rolesUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    // Find or create the client role
+    let role = rolesRes.data.find((r) => r.name === roleName);
+    if (!role) {
+      // Create the role if it doesn't exist
+      const createRoleUrl = `${baseUrl}/admin/realms/${realm}/clients/${clientId}/roles`;
+      const createRoleRes = await axios.post(
+        createRoleUrl,
+        {
+          name: roleName,
+          description: `Role for ${roleName}`,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      role = createRoleRes.data;
+    }
+
+    // Step 3: Assign the role to the user at the client level
+    const assignRoleUrl = `${baseUrl}/admin/realms/${realm}/users/${userId}/role-mappings/clients/${clientId}`;
+    await axios.post(
+      assignRoleUrl,
+      [
+        {
+          id: role.id,
+          name: role.name,
+        },
+      ],
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    this.logger.log(`✅ Assigned client role "${roleName}" to user: ${userId}`);
+  } catch (error) {
+    this.logger.error(
+      '❌ Failed to assign role:',
+      error?.response?.data || error.message
+    );
+    this.logger.error('Status:', error?.response?.status);
+    this.logger.error('Status Text:', error?.response?.statusText);
+    this.logger.error('URL:', error?.config?.url);
+    throw new ApiException(
+      'Failed to assign role to user',
+      500,
+      'ERR_ROLE_ASSIGN'
+    );
+  }
+}
+
+    
   
     async deleteUser(userId: string) {
       const token = await this.getAdminToken();

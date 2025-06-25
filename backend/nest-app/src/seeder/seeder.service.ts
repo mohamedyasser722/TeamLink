@@ -106,56 +106,66 @@ export class SeederService {
     this.logger.log('Seeding users...', 'SeederService');
 
     const usersData = [
-      {
-        keycloakId: '03135245-86ab-4a7b-a035-cacb7cec527d',
-        username: 'mohamed123',
-        email: 'chopyasser722@gmail.com',
-        bio: 'Full-stack developer with 5 years of experience in React and Node.js. Passionate about building scalable web applications.',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=john',
-      },
-      {
-        keycloakId: 'kc-002',
-        username: 'sarah_wilson',
-        email: 'sarah@example.com',
-        bio: 'UI/UX Designer and frontend developer. Love creating beautiful and intuitive user experiences.',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah',
-      },
-      {
-        keycloakId: 'kc-003',
-        username: 'mike_chen',
-        email: 'mike@example.com',
-        bio: 'Backend engineer specializing in Python and cloud infrastructure. DevOps enthusiast.',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mike',
-      },
-      {
-        keycloakId: 'kc-004',
-        username: 'emily_davis',
-        email: 'emily@example.com',
-        bio: 'Project manager with technical background. Experienced in leading cross-functional teams.',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=emily',
-      },
-      {
-        keycloakId: 'kc-005',
-        username: 'alex_rodriguez',
-        email: 'alex@example.com',
-        bio: 'Mobile app developer with expertise in React Native and iOS development.',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex',
-      },
-      {
-        keycloakId: 'kc-006',
-        username: 'lisa_kim',
-        email: 'lisa@example.com',
-        bio: 'Data scientist and ML engineer. Passionate about turning data into actionable insights.',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lisa',
-      },
-      {
-        keycloakId: 'kc-007',
-        username: 'david_johnson',
-        email: 'david@example.com',
-        bio: 'DevOps engineer with expertise in AWS, Docker, and CI/CD pipelines.',
-        avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=david',
-      },
-    ];
+        // === LEADERS (Only these 2 can create/own projects) ===
+        {
+          keycloakId: 'e7f7196a-1d8a-419b-bed1-e6f925ed8cc6',
+          username: 'yassen722',
+          email: 'yassenmohamed722@gmail.com',
+          bio: 'Experienced team leader and project manager. UI/UX Designer and frontend developer. Love creating beautiful and intuitive user experiences and leading successful teams.',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=sarah',
+          // LEADER - Can create projects and accept applications
+        },
+        {
+          keycloakId: 'kc-003',
+          username: 'mike_chen',
+          email: 'mike@example.com',
+          bio: 'Senior team leader and backend engineer specializing in Python and cloud infrastructure. DevOps enthusiast with strong leadership skills.',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=mike',
+          // LEADER - Can create projects and accept applications
+        },
+        
+        // === FREELANCERS (Can only apply to projects) ===
+        {
+          keycloakId: 'ad583a39-82ff-4ad7-aa42-af2474c5d1a9',
+          username: 'mohamed722',
+          email: 'mohamedyasser722@gmail.com',
+          bio: 'Full-stack developer with 5 years of experience in React and Node.js. Passionate about building scalable web applications.',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=john',
+          // FREELANCER - Can only apply to projects
+        },
+        {
+          keycloakId: 'kc-004',
+          username: 'emily_davis',
+          email: 'emily@example.com',
+          bio: 'Freelance project coordinator with technical background. Experienced in supporting cross-functional teams.',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=emily',
+          // FREELANCER - Can only apply to projects
+        },
+        {
+          keycloakId: 'kc-005',
+          username: 'alex_rodriguez',
+          email: 'alex@example.com',
+          bio: 'Freelance mobile app developer with expertise in React Native and iOS development.',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=alex',
+          // FREELANCER - Can only apply to projects
+        },
+        {
+          keycloakId: 'kc-006',
+          username: 'lisa_kim',
+          email: 'lisa@example.com',
+          bio: 'Freelance data scientist and ML engineer. Passionate about turning data into actionable insights.',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=lisa',
+          // FREELANCER - Can only apply to projects
+        },
+        {
+          keycloakId: 'kc-007',
+          username: 'david_johnson',
+          email: 'david@example.com',
+          bio: 'Freelance DevOps engineer with expertise in AWS, Docker, and CI/CD pipelines.',
+          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=david',
+          // FREELANCER - Can only apply to projects
+        },
+      ];
 
     const users = this.userRepository.create(usersData);
     return await this.userRepository.save(users);
@@ -165,44 +175,48 @@ export class SeederService {
     this.logger.log('Seeding user skills...', 'SeederService');
 
     const userSkillsData = [
-      // John Doe - Full-stack developer
-      { user: users[0], skill: skills[0], level: SkillLevel.EXPERT }, // JavaScript
-      { user: users[0], skill: skills[1], level: SkillLevel.EXPERT }, // TypeScript
+      // === LEADERS ===
+      // yassen722 - LEADER (UI/UX Designer and Frontend Developer)
       { user: users[0], skill: skills[2], level: SkillLevel.EXPERT }, // React
-      { user: users[0], skill: skills[3], level: SkillLevel.EXPERT }, // Node.js
-      { user: users[0], skill: skills[7], level: SkillLevel.INTERMEDIATE }, // MySQL
+      { user: users[0], skill: skills[6], level: SkillLevel.EXPERT }, // UI/UX Design
+      { user: users[0], skill: skills[0], level: SkillLevel.EXPERT }, // JavaScript
+      { user: users[0], skill: skills[1], level: SkillLevel.INTERMEDIATE }, // TypeScript
+      { user: users[0], skill: skills[12], level: SkillLevel.EXPERT }, // Project Management
 
-      // Sarah Wilson - UI/UX Designer
-      { user: users[1], skill: skills[2], level: SkillLevel.EXPERT }, // React
-      { user: users[1], skill: skills[6], level: SkillLevel.EXPERT }, // UI/UX Design
-      { user: users[1], skill: skills[0], level: SkillLevel.INTERMEDIATE }, // JavaScript
-      { user: users[1], skill: skills[1], level: SkillLevel.BEGINNER }, // TypeScript
+      // mike_chen - LEADER (Backend Engineer and DevOps)
+      { user: users[1], skill: skills[4], level: SkillLevel.EXPERT }, // Python
+      { user: users[1], skill: skills[5], level: SkillLevel.EXPERT }, // Django
+      { user: users[1], skill: skills[9], level: SkillLevel.EXPERT }, // Docker
+      { user: users[1], skill: skills[10], level: SkillLevel.EXPERT }, // AWS
+      { user: users[1], skill: skills[13], level: SkillLevel.EXPERT }, // DevOps
+      { user: users[1], skill: skills[12], level: SkillLevel.EXPERT }, // Project Management
 
-      // Mike Chen - Backend engineer
-      { user: users[2], skill: skills[4], level: SkillLevel.EXPERT }, // Python
-      { user: users[2], skill: skills[5], level: SkillLevel.EXPERT }, // Django
-      { user: users[2], skill: skills[9], level: SkillLevel.EXPERT }, // Docker
-      { user: users[2], skill: skills[10], level: SkillLevel.EXPERT }, // AWS
-      { user: users[2], skill: skills[13], level: SkillLevel.EXPERT }, // DevOps
+      // === FREELANCERS ===
+      // mohamed722 - FREELANCER (Full-stack developer)
+      { user: users[2], skill: skills[0], level: SkillLevel.EXPERT }, // JavaScript
+      { user: users[2], skill: skills[1], level: SkillLevel.EXPERT }, // TypeScript
+      { user: users[2], skill: skills[2], level: SkillLevel.EXPERT }, // React
+      { user: users[2], skill: skills[3], level: SkillLevel.EXPERT }, // Node.js
+      { user: users[2], skill: skills[7], level: SkillLevel.INTERMEDIATE }, // MySQL
 
-      // Emily Davis - Project Manager
-      { user: users[3], skill: skills[12], level: SkillLevel.EXPERT }, // Project Management
+      // emily_davis - FREELANCER (Project Coordinator)
+      { user: users[3], skill: skills[12], level: SkillLevel.INTERMEDIATE }, // Project Management
       { user: users[3], skill: skills[0], level: SkillLevel.BEGINNER }, // JavaScript
       { user: users[3], skill: skills[6], level: SkillLevel.INTERMEDIATE }, // UI/UX Design
 
-      // Alex Rodriguez - Mobile developer
+      // alex_rodriguez - FREELANCER (Mobile developer)
       { user: users[4], skill: skills[11], level: SkillLevel.EXPERT }, // Mobile Development
       { user: users[4], skill: skills[2], level: SkillLevel.EXPERT }, // React
       { user: users[4], skill: skills[0], level: SkillLevel.EXPERT }, // JavaScript
       { user: users[4], skill: skills[1], level: SkillLevel.INTERMEDIATE }, // TypeScript
 
-      // Lisa Kim - Data scientist
+      // lisa_kim - FREELANCER (Data scientist)
       { user: users[5], skill: skills[4], level: SkillLevel.EXPERT }, // Python
       { user: users[5], skill: skills[14], level: SkillLevel.EXPERT }, // Machine Learning
       { user: users[5], skill: skills[8], level: SkillLevel.EXPERT }, // PostgreSQL
       { user: users[5], skill: skills[10], level: SkillLevel.INTERMEDIATE }, // AWS
 
-      // David Johnson - DevOps
+      // david_johnson - FREELANCER (DevOps)
       { user: users[6], skill: skills[9], level: SkillLevel.EXPERT }, // Docker
       { user: users[6], skill: skills[10], level: SkillLevel.EXPERT }, // AWS
       { user: users[6], skill: skills[13], level: SkillLevel.EXPERT }, // DevOps
@@ -217,43 +231,46 @@ export class SeederService {
     this.logger.log('Seeding projects...', 'SeederService');
 
     const projectsData = [
-      {
-        title: 'E-Commerce Platform',
-        description: 'Building a modern e-commerce platform with React frontend and Node.js backend. Looking for experienced developers to join our team.',
-        owner: users[0], // John Doe
-        status: ProjectStatus.OPEN,
-      },
-      {
-        title: 'Mobile Fitness App',
-        description: 'Developing a comprehensive fitness tracking mobile app with social features. Need mobile developers and UI/UX designers.',
-        owner: users[3], // Emily Davis
-        status: ProjectStatus.OPEN,
-      },
-      {
-        title: 'AI-Powered Analytics Dashboard',
-        description: 'Creating an analytics dashboard with machine learning insights for business intelligence. Seeking ML engineers and full-stack developers.',
-        owner: users[1], // Sarah Wilson
-        status: ProjectStatus.OPEN,
-      },
-      {
-        title: 'Microservices Architecture Migration',
-        description: 'Migrating legacy monolith to microservices architecture using Docker and AWS. Need DevOps and backend engineers.',
-        owner: users[2], // Mike Chen
-        status: ProjectStatus.IN_PROGRESS,
-      },
-      {
-        title: 'Educational Platform',
-        description: 'Building an online learning platform with video streaming and interactive content. Looking for full-stack developers.',
-        owner: users[4], // Alex Rodriguez
-        status: ProjectStatus.OPEN,
-      },
-      {
-        title: 'IoT Smart Home System',
-        description: 'Developing a comprehensive smart home IoT system with mobile app control. Need embedded and mobile developers.',
-        owner: users[5], // Lisa Kim
-        status: ProjectStatus.CLOSED,
-      },
-    ];
+        // === PROJECTS OWNED BY yassen722 (LEADER) ===
+        {
+          title: 'E-Commerce Platform',
+          description: 'Building a modern e-commerce platform with React frontend and Node.js backend. Looking for experienced developers to join our team.',
+          owner: users[0], // yassen722 (LEADER)
+          status: ProjectStatus.OPEN,
+        },
+        {
+          title: 'Mobile Fitness App',
+          description: 'Developing a comprehensive fitness tracking mobile app with social features. Need mobile developers and UI/UX designers.',
+          owner: users[0], // yassen722 (LEADER)
+          status: ProjectStatus.OPEN,
+        },
+        {
+          title: 'Educational Platform',
+          description: 'Building an online learning platform with video streaming and interactive content. Looking for full-stack developers.',
+          owner: users[0], // yassen722 (LEADER)
+          status: ProjectStatus.IN_PROGRESS,
+        },
+        
+        // === PROJECTS OWNED BY mike_chen (LEADER) ===
+        {
+          title: 'AI-Powered Analytics Dashboard',
+          description: 'Creating an analytics dashboard with machine learning insights for business intelligence. Seeking ML engineers and full-stack developers.',
+          owner: users[1], // mike_chen (LEADER)
+          status: ProjectStatus.OPEN,
+        },
+        {
+          title: 'Microservices Architecture Migration',
+          description: 'Migrating legacy monolith to microservices architecture using Docker and AWS. Need DevOps and backend engineers.',
+          owner: users[1], // mike_chen (LEADER)
+          status: ProjectStatus.OPEN,
+        },
+        {
+          title: 'IoT Smart Home System',
+          description: 'Developing a comprehensive smart home IoT system with mobile app control. Need embedded and mobile developers.',
+          owner: users[1], // mike_chen (LEADER)
+          status: ProjectStatus.CLOSED,
+        },
+      ];
 
     const projects = this.projectRepository.create(projectsData);
     return await this.projectRepository.save(projects);
@@ -263,28 +280,32 @@ export class SeederService {
     this.logger.log('Seeding applications...', 'SeederService');
 
     const applicationsData = [
-      // Applications for E-Commerce Platform
-      { user: users[1], project: projects[0], status: ApplicationStatus.PENDING },
-      { user: users[2], project: projects[0], status: ApplicationStatus.ACCEPTED },
-      { user: users[6], project: projects[0], status: ApplicationStatus.PENDING },
+      // === Applications for E-Commerce Platform (owned by yassen722) ===
+      { user: users[2], project: projects[0], status: ApplicationStatus.ACCEPTED }, // mohamed722 (FREELANCER)
+      { user: users[3], project: projects[0], status: ApplicationStatus.PENDING }, // emily_davis (FREELANCER)
+      { user: users[6], project: projects[0], status: ApplicationStatus.PENDING }, // david_johnson (FREELANCER)
 
-      // Applications for Mobile Fitness App
-      { user: users[4], project: projects[1], status: ApplicationStatus.ACCEPTED },
-      { user: users[1], project: projects[1], status: ApplicationStatus.ACCEPTED },
-      { user: users[0], project: projects[1], status: ApplicationStatus.PENDING },
+      // === Applications for Mobile Fitness App (owned by yassen722) ===
+      { user: users[4], project: projects[1], status: ApplicationStatus.ACCEPTED }, // alex_rodriguez (FREELANCER)
+      { user: users[2], project: projects[1], status: ApplicationStatus.PENDING }, // mohamed722 (FREELANCER)
+      { user: users[3], project: projects[1], status: ApplicationStatus.REJECTED }, // emily_davis (FREELANCER)
 
-      // Applications for AI-Powered Analytics Dashboard
-      { user: users[5], project: projects[2], status: ApplicationStatus.ACCEPTED },
-      { user: users[0], project: projects[2], status: ApplicationStatus.PENDING },
-      { user: users[2], project: projects[2], status: ApplicationStatus.REJECTED },
+      // === Applications for Educational Platform (owned by yassen722) ===
+      { user: users[2], project: projects[2], status: ApplicationStatus.ACCEPTED }, // mohamed722 (FREELANCER)
+      { user: users[5], project: projects[2], status: ApplicationStatus.PENDING }, // lisa_kim (FREELANCER)
 
-      // Applications for Microservices Migration
-      { user: users[6], project: projects[3], status: ApplicationStatus.ACCEPTED },
-      { user: users[0], project: projects[3], status: ApplicationStatus.ACCEPTED },
+      // === Applications for AI-Powered Analytics Dashboard (owned by mike_chen) ===
+      { user: users[5], project: projects[3], status: ApplicationStatus.ACCEPTED }, // lisa_kim (FREELANCER)
+      { user: users[2], project: projects[3], status: ApplicationStatus.PENDING }, // mohamed722 (FREELANCER)
+      { user: users[6], project: projects[3], status: ApplicationStatus.REJECTED }, // david_johnson (FREELANCER)
 
-      // Applications for Educational Platform
-      { user: users[1], project: projects[4], status: ApplicationStatus.PENDING },
-      { user: users[2], project: projects[4], status: ApplicationStatus.PENDING },
+      // === Applications for Microservices Migration (owned by mike_chen) ===
+      { user: users[6], project: projects[4], status: ApplicationStatus.ACCEPTED }, // david_johnson (FREELANCER)
+      { user: users[2], project: projects[4], status: ApplicationStatus.ACCEPTED }, // mohamed722 (FREELANCER)
+
+      // === Applications for IoT Smart Home System (owned by mike_chen) ===
+      { user: users[4], project: projects[5], status: ApplicationStatus.ACCEPTED }, // alex_rodriguez (FREELANCER)
+      { user: users[5], project: projects[5], status: ApplicationStatus.PENDING }, // lisa_kim (FREELANCER)
     ];
 
     const applications = this.applicationRepository.create(applicationsData);
@@ -295,23 +316,30 @@ export class SeederService {
     this.logger.log('Seeding teams...', 'SeederService');
 
     const teamsData = [
-      // E-Commerce Platform Team
-      { project: projects[0], user: users[0], roleTitle: 'Project Lead' },
-      { project: projects[0], user: users[2], roleTitle: 'Backend Developer' },
+      // === E-Commerce Platform Team (owned by yassen722) ===
+      { project: projects[0], user: users[0], roleTitle: 'Project Lead' }, // yassen722 (LEADER/OWNER)
+      { project: projects[0], user: users[2], roleTitle: 'Full-Stack Developer' }, // mohamed722 (FREELANCER - ACCEPTED)
 
-      // Mobile Fitness App Team
-      { project: projects[1], user: users[3], roleTitle: 'Project Manager' },
-      { project: projects[1], user: users[4], roleTitle: 'Mobile Developer' },
-      { project: projects[1], user: users[1], roleTitle: 'UI/UX Designer' },
+      // === Mobile Fitness App Team (owned by yassen722) ===
+      { project: projects[1], user: users[0], roleTitle: 'Project Lead' }, // yassen722 (LEADER/OWNER)
+      { project: projects[1], user: users[4], roleTitle: 'Mobile Developer' }, // alex_rodriguez (FREELANCER - ACCEPTED)
 
-      // AI Analytics Dashboard Team
-      { project: projects[2], user: users[1], roleTitle: 'Project Lead' },
-      { project: projects[2], user: users[5], roleTitle: 'ML Engineer' },
+      // === Educational Platform Team (owned by yassen722) ===
+      { project: projects[2], user: users[0], roleTitle: 'Project Lead' }, // yassen722 (LEADER/OWNER)
+      { project: projects[2], user: users[2], roleTitle: 'Full-Stack Developer' }, // mohamed722 (FREELANCER - ACCEPTED)
 
-      // Microservices Migration Team
-      { project: projects[3], user: users[2], roleTitle: 'DevOps Lead' },
-      { project: projects[3], user: users[6], roleTitle: 'DevOps Engineer' },
-      { project: projects[3], user: users[0], roleTitle: 'Backend Developer' },
+      // === AI Analytics Dashboard Team (owned by mike_chen) ===
+      { project: projects[3], user: users[1], roleTitle: 'Project Lead' }, // mike_chen (LEADER/OWNER)
+      { project: projects[3], user: users[5], roleTitle: 'ML Engineer' }, // lisa_kim (FREELANCER - ACCEPTED)
+
+      // === Microservices Migration Team (owned by mike_chen) ===
+      { project: projects[4], user: users[1], roleTitle: 'Project Lead' }, // mike_chen (LEADER/OWNER)
+      { project: projects[4], user: users[6], roleTitle: 'DevOps Engineer' }, // david_johnson (FREELANCER - ACCEPTED)
+      { project: projects[4], user: users[2], roleTitle: 'Backend Developer' }, // mohamed722 (FREELANCER - ACCEPTED)
+
+      // === IoT Smart Home System Team (owned by mike_chen) ===
+      { project: projects[5], user: users[1], roleTitle: 'Project Lead' }, // mike_chen (LEADER/OWNER)
+      { project: projects[5], user: users[4], roleTitle: 'Mobile Developer' }, // alex_rodriguez (FREELANCER - ACCEPTED)
     ];
 
     const teams = this.teamRepository.create(teamsData);

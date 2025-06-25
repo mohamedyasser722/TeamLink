@@ -36,6 +36,6 @@ import { KeycloakService } from './keyclock.service';
       useClass: RoleGuard,
     },
   ],
-  exports: [KeycloakService],
+  exports: [KeycloakService, KeycloakConnectModule],
 })
 export class KeycloakModule {}

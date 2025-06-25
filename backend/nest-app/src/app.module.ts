@@ -8,6 +8,10 @@ import { RequestContextMiddleware } from './common/middleware/request-context.mi
 import { databaseConfig } from './config/database.config';
 import { KeycloakModule } from './keyclock/keyclock.module';
 import { AuthModule } from './auth/auth.module';
+import { ProjectsModule } from './projects/projects.module';
+import { UsersModule } from './users/users.module';
+import { SkillsModule } from './skills/skills.module';
+import { TeamsModule } from './teams/teams.module';
 
 @Module({
   imports: [
@@ -24,6 +28,10 @@ import { AuthModule } from './auth/auth.module';
     SeederModule,
     KeycloakModule,
     AuthModule,
+    ProjectsModule,
+    UsersModule,
+    SkillsModule,
+    TeamsModule,
   ],
   controllers: [AppController],
   providers: [],

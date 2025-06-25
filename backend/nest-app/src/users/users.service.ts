@@ -1,0 +1,160 @@
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../entities/user.entity';
+import { UserSkill } from '../entities/user-skill.entity';
+import { Skill } from '../entities/skill.entity';
+import { UpdateProfileDto } from './dtos/update-profile.dto';
+import { AddSkillDto } from './dtos/add-skill.dto';
+import { AuthenticatedUser } from 'nest-keycloak-connect';
+
+@Injectable()
+export class UsersService {
+  constructor(
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
+    @InjectRepository(UserSkill)
+    private userSkillRepository: Repository<UserSkill>,
+    @InjectRepository(Skill)
+    private skillRepository: Repository<Skill>,
+  ) {}
+
+  async getOrCreateUser(keycloakUser: any): Promise<User> {
+    let user = await this.userRepository.findOne({ 
+      where: { keycloakId: keycloakUser.sub },
+    });
+
+    if (!user) {
+      // If user doesn't exist, create new user
+      const newUser = this.userRepository.create({
+        keycloakId: keycloakUser.sub,
+        username: keycloakUser.preferred_username || keycloakUser.email.split('@')[0],
+        email: keycloakUser.email,
+        lastLoginAt: new Date(),
+        isActive: true,
+      });
+      user = await this.userRepository.save(newUser);
+    } else {
+      // Update last login
+      user.lastLoginAt = new Date();
+      await this.userRepository.save(user);
+    }
+
+    return user;
+  }
+
+  async findUserById(id: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['userSkills', 'userSkills.skill'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  async findUserByEmail(email: string): Promise<User> {
+    const user = await this.userRepository.findOne({
+      where: { email },
+      relations: ['userSkills', 'userSkills.skill'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
+  }
+
+  async updateProfile(keycloakUser: any, updateProfileDto: UpdateProfileDto): Promise<User> {
+    const user = await this.getOrCreateUser(keycloakUser);
+    
+    Object.assign(user, updateProfileDto);
+    user.lastLoginAt = new Date();
+    
+    return this.userRepository.save(user);
+  }
+
+  async addSkillToUser(keycloakUser: any, addSkillDto: AddSkillDto): Promise<UserSkill> {
+    const user = await this.getOrCreateUser(keycloakUser);
+    
+    const skill = await this.skillRepository.findOne({
+      where: { id: addSkillDto.skillId },
+    });
+
+    if (!skill) {
+      throw new NotFoundException('Skill not found');
+    }
+
+    // Check if user already has this skill
+    const existingUserSkill = await this.userSkillRepository.findOne({
+      where: { userId: user.id, skillId: addSkillDto.skillId },
+    });
+
+    if (existingUserSkill) {
+      // Update existing skill level
+      existingUserSkill.level = addSkillDto.level;
+      return this.userSkillRepository.save(existingUserSkill);
+    }
+
+    // Create new user skill
+    const userSkill = this.userSkillRepository.create({
+      userId: user.id,
+      skillId: addSkillDto.skillId,
+      level: addSkillDto.level,
+    });
+
+    return this.userSkillRepository.save(userSkill);
+  }
+
+  async removeSkillFromUser(keycloakUser: any, skillId: string): Promise<void> {
+    const user = await this.getOrCreateUser(keycloakUser);
+    
+    const userSkill = await this.userSkillRepository.findOne({
+      where: { userId: user.id, skillId },
+    });
+
+    if (!userSkill) {
+      throw new NotFoundException('User skill not found');
+    }
+
+    await this.userSkillRepository.remove(userSkill);
+  }
+
+  async getUserSkills(userId: string): Promise<UserSkill[]> {
+    return this.userSkillRepository.find({
+      where: { userId },
+      relations: ['skill'],
+    });
+  }
+
+  async getMySkills(keycloakUser: any): Promise<UserSkill[]> {
+    const user = await this.getOrCreateUser(keycloakUser);
+    return this.getUserSkills(user.id);
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return this.userRepository.find({
+      where: { isActive: true },
+      relations: ['userSkills', 'userSkills.skill'],
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        bio: true,
+        avatarUrl: true,
+        createdAt: true,
+        userSkills: {
+          level: true,
+          skill: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+  }
+} 
