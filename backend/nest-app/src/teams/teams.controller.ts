@@ -23,15 +23,7 @@ import { UserRole } from '../auth/enums/user-roles.enum';
 export class TeamsController {
   constructor(private readonly teamsService: TeamsService) {}
 
-  @Get('projects/:projectId')
-  @ApiOperation({ summary: 'Get project team members' })
-  @ApiResponse({ status: 200, description: 'Team members retrieved successfully' })
-  async getProjectTeam(
-    @Param('projectId', ParseUUIDPipe) projectId: string,
-  ): Promise<BaseResponse<Team[]>> {
-    const team = await this.teamsService.getProjectTeam(projectId);
-    return BaseResponse.success(team, 'Team members retrieved successfully');
-  }
+
 
   @Get('my-memberships')
   @ApiOperation({ summary: 'Get my team memberships' })

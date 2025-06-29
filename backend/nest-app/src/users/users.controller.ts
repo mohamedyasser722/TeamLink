@@ -62,24 +62,7 @@ export class UsersController {
     return BaseResponse.success(user, 'Profile updated successfully');
   }
 
-  @Get('all')
-  @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({ status: 200, description: 'Users retrieved successfully' })
-  async getAllUsers(): Promise<BaseResponse<User[]>> {
-    const users = await this.usersService.getAllUsers();
-    return BaseResponse.success(users, 'Users retrieved successfully');
-  }
 
-  @Get(':id')
-  @ApiOperation({ summary: 'Get user by ID' })
-  @ApiResponse({ status: 200, description: 'User retrieved successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  async getUserById(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<BaseResponse<User>> {
-    const user = await this.usersService.findUserById(id);
-    return BaseResponse.success(user, 'User retrieved successfully');
-  }
 
   @Get(':id/profile')
   @ApiOperation({ summary: 'Get detailed user profile including ratings' })
@@ -124,13 +107,5 @@ export class UsersController {
     return BaseResponse.success(null, 'Skill removed successfully');
   }
 
-  @Get(':id/skills')
-  @ApiOperation({ summary: 'Get user skills by user ID' })
-  @ApiResponse({ status: 200, description: 'User skills retrieved successfully' })
-  async getUserSkills(
-    @Param('id', ParseUUIDPipe) id: string,
-  ): Promise<BaseResponse<UserSkill[]>> {
-    const skills = await this.usersService.getUserSkills(id);
-    return BaseResponse.success(skills, 'User skills retrieved successfully');
-  }
+
 } 

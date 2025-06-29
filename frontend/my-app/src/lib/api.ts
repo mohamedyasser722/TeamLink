@@ -113,19 +113,9 @@ export const projectsApi = {
     return response.data.data;
   },
 
-  // New features
-  async completeProject(projectId: string) {
-    const response = await api.put(`/projects/${projectId}/complete`);
-    return response.data.data;
-  },
-
+  // Rating features
   async rateUser(projectId: string, ratingData: { ratedUserId: string; rating: number; comment?: string }) {
     const response = await api.post(`/projects/${projectId}/rate`, ratingData);
-    return response.data.data;
-  },
-
-  async getProjectRatings(projectId: string) {
-    const response = await api.get(`/projects/${projectId}/ratings`);
     return response.data.data;
   },
 
@@ -152,11 +142,6 @@ export const projectsApi = {
 
 // Teams API
 export const teamsApi = {
-  async getTeamMembers(projectId: string) {
-    const response = await api.get(`/teams/projects/${projectId}`);
-    return response.data.data;
-  },
-
   async getMyTeamMemberships() {
     const response = await api.get('/teams/my-memberships');
     return response.data.data;
@@ -201,7 +186,7 @@ export const usersApi = {
     return response.data;
   },
 
-  // New feature: Get detailed user profile with ratings
+  // Get detailed user profile with ratings
   async getUserProfile(userId: string) {
     const response = await api.get(`/users/${userId}/profile`);
     return response.data.data;

@@ -177,19 +177,7 @@ export class ProjectsController {
     return BaseResponse.success(application, 'Application status updated successfully');
   }
 
-  @Put(':id/complete')
-  @Roles({ roles: ['leader'] })
-  @ApiOperation({ summary: 'Mark project as completed (Leaders only)' })
-  @ApiResponse({ status: 200, description: 'Project marked as completed' })
-  @ApiResponse({ status: 403, description: 'You can only complete your own projects' })
-  @ApiResponse({ status: 400, description: 'Only projects in progress can be completed' })
-  async completeProject(
-    @Param('id', ParseUUIDPipe) id: string,
-    @AuthenticatedUser() keycloakUser: any,
-  ): Promise<BaseResponse<Project>> {
-    const project = await this.projectsService.completeProject(id, keycloakUser);
-    return BaseResponse.success(project, 'Project marked as completed');
-  }
+
 
   @Post(':id/rate')
   @Roles({ roles: ['leader'] })
@@ -206,18 +194,7 @@ export class ProjectsController {
     return BaseResponse.success(rating, 'Rating submitted successfully');
   }
 
-  @Get(':id/ratings')
-  @Roles({ roles: ['leader'] })
-  @ApiOperation({ summary: 'Get all ratings for a project (Leaders only)' })
-  @ApiResponse({ status: 200, description: 'Ratings retrieved successfully' })
-  @ApiResponse({ status: 403, description: 'You can only view ratings for your own projects' })
-  async getProjectRatings(
-    @Param('id', ParseUUIDPipe) id: string,
-    @AuthenticatedUser() keycloakUser: any,
-  ): Promise<BaseResponse<Rating[]>> {
-    const ratings = await this.projectsService.getProjectRatings(id, keycloakUser);
-    return BaseResponse.success(ratings, 'Ratings retrieved successfully');
-  }
+
 
   @Get(':id/rateable-members')
   @Roles({ roles: ['leader'] })

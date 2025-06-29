@@ -336,21 +336,7 @@ export class ProjectsService {
     });
   }
 
-  async completeProject(projectId: string, keycloakUser: any): Promise<Project> {
-    const user = await this.usersService.getOrCreateUser(keycloakUser);
-    const project = await this.findProjectById(projectId);
-    
-    if (project.ownerId !== user.id) {
-      throw new ForbiddenException('You can only complete your own projects');
-    }
 
-    if (project.status !== ProjectStatus.IN_PROGRESS) {
-      throw new BadRequestException('Only projects in progress can be completed');
-    }
-
-    project.status = ProjectStatus.COMPLETED;
-    return this.projectRepository.save(project);
-  }
 
   async rateUser(projectId: string, createRatingDto: CreateRatingDto, keycloakUser: any): Promise<Rating> {
     const user = await this.usersService.getOrCreateUser(keycloakUser);
@@ -489,34 +475,6 @@ export class ProjectsService {
     };
 
     return levelHierarchy[userLevel] >= levelHierarchy[requiredLevel];
-  }
-
-  async getProjectRatings(projectId: string, keycloakUser: any): Promise<Rating[]> {
-    const user = await this.usersService.getOrCreateUser(keycloakUser);
-    const project = await this.findProjectById(projectId);
-    
-    if (project.ownerId !== user.id) {
-      throw new ForbiddenException('You can only view ratings for your own projects');
-    }
-
-    return this.ratingRepository.find({
-      where: { projectId },
-      relations: ['ratedUser', 'rater'],
-      select: {
-        ratedUser: {
-          id: true,
-          username: true,
-          email: true,
-          avatarUrl: true,
-        },
-        rater: {
-          id: true,
-          username: true,
-          email: true,
-          avatarUrl: true,
-        },
-      },
-    });
   }
 
   async getRateableTeamMembers(projectId: string, keycloakUser: any): Promise<any[]> {
