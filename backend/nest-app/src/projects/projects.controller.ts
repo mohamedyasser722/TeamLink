@@ -219,5 +219,18 @@ export class ProjectsController {
     return BaseResponse.success(ratings, 'Ratings retrieved successfully');
   }
 
+  @Get(':id/rateable-members')
+  @Roles({ roles: ['leader'] })
+  @ApiOperation({ summary: 'Get team members who can be rated for a completed project (Leaders only)' })
+  @ApiResponse({ status: 200, description: 'Rateable team members retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'You can only view team members for your own projects' })
+  @ApiResponse({ status: 400, description: 'Can only rate after project completion' })
+  async getRateableTeamMembers(
+    @Param('id', ParseUUIDPipe) id: string,
+    @AuthenticatedUser() keycloakUser: any,
+  ): Promise<BaseResponse<any[]>> {
+    const members = await this.projectsService.getRateableTeamMembers(id, keycloakUser);
+    return BaseResponse.success(members, 'Rateable team members retrieved successfully');
+  }
 
 } 

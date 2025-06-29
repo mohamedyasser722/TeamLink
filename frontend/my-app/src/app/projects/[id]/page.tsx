@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Navigation from '@/components/Navigation';
+import RatingComponent from '@/components/RatingComponent';
 
 const updateProjectSchema = z.object({
   title: z.string().min(1, 'Title is required').max(100, 'Title must be less than 100 characters'),
@@ -361,6 +362,14 @@ export default function ProjectDetailPage() {
                   </div>
                 </div>
               )}
+
+              {/* Rating Component - Only shown for completed projects by the owner */}
+              <RatingComponent
+                projectId={projectId}
+                projectTitle={project.title}
+                isProjectOwner={!!canEdit}
+                projectStatus={project.status}
+              />
 
                              {/* Actions */}
                <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200">

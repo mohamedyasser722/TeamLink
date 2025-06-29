@@ -129,6 +129,11 @@ export const projectsApi = {
     return response.data.data;
   },
 
+  async getRateableTeamMembers(projectId: string) {
+    const response = await api.get(`/projects/${projectId}/rateable-members`);
+    return response.data.data;
+  },
+
   async getRecommendedProjects() {
     const response = await api.get('/projects/recommended');
     return response.data.data;

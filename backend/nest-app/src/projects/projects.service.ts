@@ -364,6 +364,11 @@ export class ProjectsService {
       throw new BadRequestException('You can only rate users after the project is completed');
     }
 
+    // Prevent project leaders from rating themselves
+    if (createRatingDto.ratedUserId === user.id) {
+      throw new BadRequestException('You cannot rate yourself');
+    }
+
     // Check if the user being rated was part of the team
     const teamMember = await this.teamRepository.findOne({
       where: { projectId, userId: createRatingDto.ratedUserId },
@@ -501,14 +506,75 @@ export class ProjectsService {
         ratedUser: {
           id: true,
           username: true,
+          email: true,
           avatarUrl: true,
         },
         rater: {
           id: true,
           username: true,
+          email: true,
           avatarUrl: true,
         },
       },
     });
+  }
+
+  async getRateableTeamMembers(projectId: string, keycloakUser: any): Promise<any[]> {
+    const user = await this.usersService.getOrCreateUser(keycloakUser);
+    const project = await this.findProjectById(projectId);
+    
+    if (project.ownerId !== user.id) {
+      throw new ForbiddenException('You can only view team members for your own projects');
+    }
+
+    if (project.status !== ProjectStatus.COMPLETED) {
+      throw new BadRequestException('You can only rate team members after the project is completed');
+    }
+
+    // Get all team members for this project
+    const teamMembers = await this.teamRepository.find({
+      where: { projectId },
+      relations: ['user'],
+      select: {
+        user: {
+          id: true,
+          username: true,
+          email: true,
+          avatarUrl: true,
+          bio: true,
+        },
+      },
+    });
+
+    // Filter out the project owner (leader) from team members - they can't rate themselves
+    const rateableTeamMembers = teamMembers.filter(teamMember => teamMember.userId !== user.id);
+
+    // Get existing ratings for this project
+    const existingRatings = await this.ratingRepository.find({
+      where: { projectId, raterId: user.id },
+    });
+
+    // Map team members with their rating status
+    const rateableMembers = rateableTeamMembers.map(teamMember => {
+      const existingRating = existingRatings.find(
+        rating => rating.ratedUserId === teamMember.userId
+      );
+
+      return {
+        teamMemberId: teamMember.id,
+        user: teamMember.user,
+        roleTitle: teamMember.roleTitle,
+        joinedAt: teamMember.joinedAt,
+        hasBeenRated: !!existingRating,
+        existingRating: existingRating ? {
+          id: existingRating.id,
+          rating: existingRating.rating,
+          comment: existingRating.comment,
+          createdAt: existingRating.createdAt,
+        } : null,
+      };
+    });
+
+    return rateableMembers;
   }
 } 
