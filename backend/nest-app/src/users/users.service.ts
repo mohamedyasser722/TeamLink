@@ -4,8 +4,10 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { UserSkill } from '../entities/user-skill.entity';
 import { Skill } from '../entities/skill.entity';
+import { Rating } from '../entities/rating.entity';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { AddSkillDto } from './dtos/add-skill.dto';
+import { UserProfileDto } from './dtos/user-profile.dto';
 import { AuthenticatedUser } from 'nest-keycloak-connect';
 
 @Injectable()
@@ -17,6 +19,8 @@ export class UsersService {
     private userSkillRepository: Repository<UserSkill>,
     @InjectRepository(Skill)
     private skillRepository: Repository<Skill>,
+    @InjectRepository(Rating)
+    private ratingRepository: Repository<Rating>,
   ) {}
 
   async getOrCreateUser(keycloakUser: any): Promise<User> {
@@ -156,5 +160,51 @@ export class UsersService {
         },
       },
     });
+  }
+
+  async getUserProfile(userId: string): Promise<UserProfileDto> {
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['userSkills', 'userSkills.skill', 'receivedRatings', 'receivedRatings.rater', 'receivedRatings.project'],
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Calculate average rating
+    const ratings = user.receivedRatings || [];
+    const averageRating = ratings.length > 0 
+      ? ratings.reduce((sum, rating) => sum + rating.rating, 0) / ratings.length 
+      : 0;
+
+    // Format skills
+    const skills = user.userSkills?.map(userSkill => ({
+      id: userSkill.skill.id,
+      name: userSkill.skill.name,
+      level: userSkill.level,
+    })) || [];
+
+    // Format ratings
+    const formattedRatings = ratings.map(rating => ({
+      rating: rating.rating,
+      comment: rating.comment,
+      createdAt: rating.createdAt,
+      raterUsername: rating.rater.username,
+      projectTitle: rating.project.title,
+    }));
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
+      createdAt: user.createdAt,
+      skills,
+      ratings: formattedRatings,
+      averageRating: Math.round(averageRating * 100) / 100, // Round to 2 decimal places
+      totalRatings: ratings.length,
+    };
   }
 } 

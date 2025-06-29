@@ -1,6 +1,8 @@
-import { IsString, IsOptional, MaxLength, IsEnum } from 'class-validator';
+import { IsString, IsOptional, MaxLength, IsEnum, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import { ProjectStatus } from '../../entities/enums/project-status.enum';
+import { ProjectSkillDto } from './project-skill.dto';
 
 export class UpdateProjectDto {
   @ApiProperty({
@@ -30,4 +32,15 @@ export class UpdateProjectDto {
   @IsEnum(ProjectStatus)
   @IsOptional()
   status?: ProjectStatus;
+
+  @ApiProperty({
+    description: 'Required skills for the project',
+    type: [ProjectSkillDto],
+    required: false,
+  })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ProjectSkillDto)
+  requiredSkills?: ProjectSkillDto[];
 } 

@@ -4,11 +4,17 @@ import { Repository } from 'typeorm';
 import { Project } from '../entities/project.entity';
 import { Application } from '../entities/application.entity';
 import { Team } from '../entities/team.entity';
+import { ProjectSkill } from '../entities/project-skill.entity';
+import { Rating } from '../entities/rating.entity';
+import { UserSkill } from '../entities/user-skill.entity';
 import { CreateProjectDto } from './dtos/create-project.dto';
 import { UpdateProjectDto } from './dtos/update-project.dto';
 import { UpdateApplicationStatusDto } from './dtos/update-application-status.dto';
+import { CreateRatingDto } from './dtos/create-rating.dto';
+import { ProjectMatchDto, ProjectSkillMatchDto } from './dtos/project-match.dto';
 import { ApplicationStatus } from '../entities/enums/application-status.enum';
 import { ProjectStatus } from '../entities/enums/project-status.enum';
+import { SkillLevel } from '../entities/enums/skill-level.enum';
 import { UsersService } from '../users/users.service';
 
 @Injectable()
@@ -20,6 +26,12 @@ export class ProjectsService {
     private applicationRepository: Repository<Application>,
     @InjectRepository(Team)
     private teamRepository: Repository<Team>,
+    @InjectRepository(ProjectSkill)
+    private projectSkillRepository: Repository<ProjectSkill>,
+    @InjectRepository(Rating)
+    private ratingRepository: Repository<Rating>,
+    @InjectRepository(UserSkill)
+    private userSkillRepository: Repository<UserSkill>,
     private usersService: UsersService,
   ) {}
 
@@ -27,16 +39,32 @@ export class ProjectsService {
     const user = await this.usersService.getOrCreateUser(keycloakUser);
     
     const project = this.projectRepository.create({
-      ...createProjectDto,
+      title: createProjectDto.title,
+      description: createProjectDto.description,
       ownerId: user.id,
     });
-    return this.projectRepository.save(project);
+    
+    const savedProject = await this.projectRepository.save(project);
+
+    // Add required skills if provided
+    if (createProjectDto.requiredSkills && createProjectDto.requiredSkills.length > 0) {
+      const projectSkills = createProjectDto.requiredSkills.map(skill => 
+        this.projectSkillRepository.create({
+          projectId: savedProject.id,
+          skillId: skill.skillId,
+          requiredLevel: skill.requiredLevel,
+        })
+      );
+      await this.projectSkillRepository.save(projectSkills);
+    }
+
+    return savedProject;
   }
 
   async findAllProjects(): Promise<Project[]> {
     return this.projectRepository.find({
       where: { status: ProjectStatus.OPEN },
-      relations: ['owner', 'applications', 'team'],
+      relations: ['owner', 'applications', 'team', 'projectSkills', 'projectSkills.skill'],
       select: {
         owner: {
           id: true,
@@ -51,7 +79,20 @@ export class ProjectsService {
   async findProjectById(id: string): Promise<Project> {
     const project = await this.projectRepository.findOne({
       where: { id },
-      relations: ['owner', 'applications', 'applications.user', 'team', 'team.user'],
+      relations: [
+        'owner', 
+        'applications', 
+        'applications.user', 
+        'applications.user.userSkills',
+        'applications.user.userSkills.skill',
+        'applications.user.receivedRatings',
+        'applications.user.receivedRatings.rater',
+        'applications.user.receivedRatings.project',
+        'team', 
+        'team.user',
+        'projectSkills',
+        'projectSkills.skill'
+      ],
       select: {
         owner: {
           id: true,
@@ -67,7 +108,9 @@ export class ProjectsService {
             id: true,
             username: true,
             email: true,
+            bio: true,
             avatarUrl: true,
+            createdAt: true,
           },
         },
         team: {
@@ -99,8 +142,30 @@ export class ProjectsService {
       throw new ForbiddenException('You can only update your own projects');
     }
 
-    Object.assign(project, updateProjectDto);
-    return this.projectRepository.save(project);
+    // Update basic project fields
+    const { requiredSkills, ...basicFields } = updateProjectDto;
+    Object.assign(project, basicFields);
+    const updatedProject = await this.projectRepository.save(project);
+
+    // Handle required skills update if provided
+    if (requiredSkills !== undefined) {
+      // Delete existing project skills
+      await this.projectSkillRepository.delete({ projectId: id });
+
+      // Add new required skills if any
+      if (requiredSkills.length > 0) {
+        const projectSkills = requiredSkills.map(skill => 
+          this.projectSkillRepository.create({
+            projectId: id,
+            skillId: skill.skillId,
+            requiredLevel: skill.requiredLevel,
+          })
+        );
+        await this.projectSkillRepository.save(projectSkills);
+      }
+    }
+
+    return updatedProject;
   }
 
   async deleteProject(id: string, keycloakUser: any): Promise<void> {
@@ -266,6 +331,182 @@ export class ProjectsService {
             email: true,
             avatarUrl: true,
           },
+        },
+      },
+    });
+  }
+
+  async completeProject(projectId: string, keycloakUser: any): Promise<Project> {
+    const user = await this.usersService.getOrCreateUser(keycloakUser);
+    const project = await this.findProjectById(projectId);
+    
+    if (project.ownerId !== user.id) {
+      throw new ForbiddenException('You can only complete your own projects');
+    }
+
+    if (project.status !== ProjectStatus.IN_PROGRESS) {
+      throw new BadRequestException('Only projects in progress can be completed');
+    }
+
+    project.status = ProjectStatus.COMPLETED;
+    return this.projectRepository.save(project);
+  }
+
+  async rateUser(projectId: string, createRatingDto: CreateRatingDto, keycloakUser: any): Promise<Rating> {
+    const user = await this.usersService.getOrCreateUser(keycloakUser);
+    const project = await this.findProjectById(projectId);
+    
+    if (project.ownerId !== user.id) {
+      throw new ForbiddenException('You can only rate users on your own projects');
+    }
+
+    if (project.status !== ProjectStatus.COMPLETED) {
+      throw new BadRequestException('You can only rate users after the project is completed');
+    }
+
+    // Check if the user being rated was part of the team
+    const teamMember = await this.teamRepository.findOne({
+      where: { projectId, userId: createRatingDto.ratedUserId },
+    });
+
+    if (!teamMember) {
+      throw new BadRequestException('You can only rate users who were part of your project team');
+    }
+
+    // Check if rating already exists
+    const existingRating = await this.ratingRepository.findOne({
+      where: { 
+        raterId: user.id, 
+        ratedUserId: createRatingDto.ratedUserId, 
+        projectId 
+      },
+    });
+
+    if (existingRating) {
+      throw new BadRequestException('You have already rated this user for this project');
+    }
+
+    const rating = this.ratingRepository.create({
+      raterId: user.id,
+      ratedUserId: createRatingDto.ratedUserId,
+      projectId,
+      rating: createRatingDto.rating,
+      comment: createRatingDto.comment,
+    });
+
+    return this.ratingRepository.save(rating);
+  }
+
+  async getRecommendedProjects(keycloakUser: any): Promise<ProjectMatchDto[]> {
+    const user = await this.usersService.getOrCreateUser(keycloakUser);
+    
+    // Get user skills
+    const userSkills = await this.userSkillRepository.find({
+      where: { userId: user.id },
+      relations: ['skill'],
+    });
+
+    if (userSkills.length === 0) {
+      return [];
+    }
+
+    // Get all open projects with their required skills
+    const projects = await this.projectRepository.find({
+      where: { status: ProjectStatus.OPEN },
+      relations: ['owner', 'projectSkills', 'projectSkills.skill'],
+    });
+
+    const projectMatches: ProjectMatchDto[] = [];
+
+    for (const project of projects) {
+      // Skip own projects
+      if (project.ownerId === user.id) {
+        continue;
+      }
+
+      // Skip if no required skills
+      if (!project.projectSkills || project.projectSkills.length === 0) {
+        continue;
+      }
+
+      const skillMatches: ProjectSkillMatchDto[] = [];
+      let matchedSkills = 0;
+
+      for (const projectSkill of project.projectSkills) {
+        const userSkill = userSkills.find(us => us.skillId === projectSkill.skillId);
+        
+        const isMatch = userSkill ? this.isSkillLevelMatch(userSkill.level, projectSkill.requiredLevel) : false;
+        
+        if (isMatch) {
+          matchedSkills++;
+        }
+
+        skillMatches.push({
+          skillName: projectSkill.skill.name,
+          requiredLevel: projectSkill.requiredLevel,
+          userLevel: userSkill?.level || null,
+          isMatch,
+        });
+      }
+
+      const matchPercentage = (matchedSkills / project.projectSkills.length) * 100;
+
+      // Only include projects with at least some skill match
+      if (matchedSkills > 0) {
+        projectMatches.push({
+          id: project.id,
+          title: project.title,
+          description: project.description,
+          status: project.status,
+          createdAt: project.createdAt,
+          owner: {
+            id: project.owner.id,
+            username: project.owner.username,
+            avatarUrl: project.owner.avatarUrl,
+          },
+          skillMatches,
+          matchPercentage: Math.round(matchPercentage),
+          totalRequiredSkills: project.projectSkills.length,
+          matchedSkills,
+        });
+      }
+    }
+
+    // Sort by match percentage (highest first)
+    return projectMatches.sort((a, b) => b.matchPercentage - a.matchPercentage);
+  }
+
+  private isSkillLevelMatch(userLevel: SkillLevel, requiredLevel: SkillLevel): boolean {
+    const levelHierarchy = {
+      [SkillLevel.BEGINNER]: 1,
+      [SkillLevel.INTERMEDIATE]: 2,
+      [SkillLevel.EXPERT]: 3,
+    };
+
+    return levelHierarchy[userLevel] >= levelHierarchy[requiredLevel];
+  }
+
+  async getProjectRatings(projectId: string, keycloakUser: any): Promise<Rating[]> {
+    const user = await this.usersService.getOrCreateUser(keycloakUser);
+    const project = await this.findProjectById(projectId);
+    
+    if (project.ownerId !== user.id) {
+      throw new ForbiddenException('You can only view ratings for your own projects');
+    }
+
+    return this.ratingRepository.find({
+      where: { projectId },
+      relations: ['ratedUser', 'rater'],
+      select: {
+        ratedUser: {
+          id: true,
+          username: true,
+          avatarUrl: true,
+        },
+        rater: {
+          id: true,
+          username: true,
+          avatarUrl: true,
         },
       },
     });

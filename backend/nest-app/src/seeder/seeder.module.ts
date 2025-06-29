@@ -7,8 +7,10 @@ import {
   Skill,
   UserSkill,
   Project,
+  ProjectSkill,
   Application,
   Team,
+  Rating,
 } from '../entities/index';
 
 @Module({
@@ -18,8 +20,10 @@ import {
       Skill,
       UserSkill,
       Project,
+      ProjectSkill,
       Application,
       Team,
+      Rating,
     ]),
   ],
   controllers: [SeederController],

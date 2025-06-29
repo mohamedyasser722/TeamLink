@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { projectsApi, teamsApi } from '@/lib/api';
 import { Project, Application, TeamMember } from '@/types/project';
+import UserProfileModal from '@/components/UserProfileModal';
+import Navigation from '@/components/Navigation';
 
 export default function MyProjectsPage() {
   const { user } = useAuth();
@@ -13,6 +15,8 @@ export default function MyProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedProject, setExpandedProject] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   useEffect(() => {
     // Redirect if not a leader
@@ -105,10 +109,22 @@ export default function MyProjectsPage() {
     return badges[status as keyof typeof badges] || 'bg-gray-100 text-gray-800';
   };
 
+  const handleViewProfile = (userId: string) => {
+    setSelectedUserId(userId);
+    setIsProfileModalOpen(true);
+  };
+
+  const handleCloseProfileModal = () => {
+    setIsProfileModalOpen(false);
+    setSelectedUserId(null);
+  };
+
   // Show loading while user role is being determined or while fetching projects
   if (!user || loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50">
+        <Navigation />
+        <div className="py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
@@ -119,6 +135,7 @@ export default function MyProjectsPage() {
                 <div className="h-4 bg-gray-200 rounded w-2/3"></div>
               </div>
             ))}
+            </div>
           </div>
         </div>
       </div>
@@ -131,7 +148,9 @@ export default function MyProjectsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <Navigation />
+      <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900">My Projects</h1>
@@ -221,13 +240,21 @@ export default function MyProjectsPage() {
                                           alt={application.user.username}
                                           className="w-8 h-8 rounded-full"
                                         />
-                                        <div>
-                                          <p className="font-medium text-gray-900">{application.user.username}</p>
+                                        <div className="flex-1">
+                                          <div className="flex items-center space-x-2">
+                                            <p className="font-medium text-gray-900">{application.user.username}</p>
+                                            <button
+                                              onClick={() => handleViewProfile(application.user.id)}
+                                              className="text-blue-600 hover:text-blue-800 text-xs underline"
+                                            >
+                                              View Profile
+                                            </button>
+                                          </div>
                                           <p className="text-sm text-gray-600">{application.user.email}</p>
                                         </div>
                                       </div>
                                       {application.user.bio && (
-                                        <p className="text-sm text-gray-600 mb-2">{application.user.bio}</p>
+                                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">{application.user.bio}</p>
                                       )}
                                       <div className="flex items-center space-x-2">
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getApplicationStatusBadge(application.status)}`}>
@@ -239,24 +266,26 @@ export default function MyProjectsPage() {
                                       </div>
                                     </div>
                                     {application.status === 'pending' && (
-                                      <div className="flex space-x-2">
-                                        <button
-                                          onClick={() => {
-                                            const roleTitle = prompt('Enter role title for this team member:');
-                                            if (roleTitle) {
-                                              handleApplicationAction(project.id, application.id, 'accepted', roleTitle);
-                                            }
-                                          }}
-                                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
-                                        >
-                                          Accept
-                                        </button>
-                                        <button
-                                          onClick={() => handleApplicationAction(project.id, application.id, 'rejected')}
-                                          className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
-                                        >
-                                          Reject
-                                        </button>
+                                      <div className="flex flex-col space-y-2">
+                                        <div className="flex space-x-2">
+                                          <button
+                                            onClick={() => {
+                                              const roleTitle = prompt('Enter role title for this team member:');
+                                              if (roleTitle) {
+                                                handleApplicationAction(project.id, application.id, 'accepted', roleTitle);
+                                              }
+                                            }}
+                                            className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs"
+                                          >
+                                            Accept
+                                          </button>
+                                          <button
+                                            onClick={() => handleApplicationAction(project.id, application.id, 'rejected')}
+                                            className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs"
+                                          >
+                                            Reject
+                                          </button>
+                                        </div>
                                       </div>
                                     )}
                                   </div>
@@ -285,8 +314,16 @@ export default function MyProjectsPage() {
                                           alt={member.user.username}
                                           className="w-8 h-8 rounded-full"
                                         />
-                                        <div>
-                                          <p className="font-medium text-gray-900">{member.user.username}</p>
+                                        <div className="flex-1">
+                                          <div className="flex items-center space-x-2">
+                                            <p className="font-medium text-gray-900">{member.user.username}</p>
+                                            <button
+                                              onClick={() => handleViewProfile(member.user.id)}
+                                              className="text-blue-600 hover:text-blue-800 text-xs underline"
+                                            >
+                                              View Profile
+                                            </button>
+                                          </div>
                                           <p className="text-sm text-gray-600">{member.user.email}</p>
                                         </div>
                                       </div>
@@ -336,6 +373,16 @@ export default function MyProjectsPage() {
             ))}
           </div>
         )}
+
+        {/* User Profile Modal */}
+        {selectedUserId && (
+          <UserProfileModal
+            userId={selectedUserId}
+            isOpen={isProfileModalOpen}
+            onClose={handleCloseProfileModal}
+          />
+        )}
+        </div>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import { projectsApi } from '@/lib/api';
+import { projectsApi, skillsApi } from '@/lib/api';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,11 +15,25 @@ const createProjectSchema = z.object({
 
 type CreateProjectForm = z.infer<typeof createProjectSchema>;
 
+interface Skill {
+  id: string;
+  name: string;
+}
+
+interface RequiredSkill {
+  skillId: string;
+  requiredLevel: 'beginner' | 'intermediate' | 'expert';
+}
+
 export default function CreateProjectPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [requiredSkills, setRequiredSkills] = useState<RequiredSkill[]>([]);
+  const [selectedSkillId, setSelectedSkillId] = useState<string>('');
+  const [selectedLevel, setSelectedLevel] = useState<'beginner' | 'intermediate' | 'expert'>('beginner');
 
   const {
     register,
@@ -29,24 +43,68 @@ export default function CreateProjectPage() {
     resolver: zodResolver(createProjectSchema),
   });
 
-  // Redirect if not a leader
+  // Redirect if not a leader and fetch skills
   useEffect(() => {
     if (user?.role !== 'leader') {
       router.push('/dashboard');
+    } else {
+      fetchSkills();
     }
   }, [user?.role, router]);
+
+  const fetchSkills = async () => {
+    try {
+      const skillsData = await skillsApi.getAllSkills();
+      setSkills(skillsData);
+    } catch (error) {
+      console.error('Error fetching skills:', error);
+    }
+  };
 
   // Don't render anything if user is not a leader (will be redirected)
   if (!user || user.role !== 'leader') {
     return null;
   }
 
+  const addRequiredSkill = () => {
+    if (!selectedSkillId) return;
+
+    // Check if skill is already added
+    const existingSkill = requiredSkills.find(skill => skill.skillId === selectedSkillId);
+    if (existingSkill) {
+      setError('This skill has already been added');
+      return;
+    }
+
+    setRequiredSkills([...requiredSkills, {
+      skillId: selectedSkillId,
+      requiredLevel: selectedLevel
+    }]);
+    setSelectedSkillId('');
+    setSelectedLevel('beginner');
+    setError(null);
+  };
+
+  const removeRequiredSkill = (skillId: string) => {
+    setRequiredSkills(requiredSkills.filter(skill => skill.skillId !== skillId));
+  };
+
+  const getSkillName = (skillId: string) => {
+    const skill = skills.find(s => s.id === skillId);
+    return skill?.name || 'Unknown Skill';
+  };
+
   const onSubmit = async (data: CreateProjectForm) => {
     try {
       setIsLoading(true);
       setError(null);
       
-      await projectsApi.createProject(data);
+      const projectData = {
+        ...data,
+        requiredSkills: requiredSkills.length > 0 ? requiredSkills : undefined
+      };
+      
+      await projectsApi.createProjectWithSkills(projectData);
       
       // Redirect to my projects page
       router.push('/projects/my-projects');
@@ -105,6 +163,91 @@ export default function CreateProjectPage() {
               />
               {errors.description && (
                 <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+              )}
+            </div>
+
+            {/* Required Skills Section */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Required Skills (Optional)
+              </label>
+              <p className="text-sm text-gray-500 mb-4">
+                Add skills that are required for this project. This will help freelancers see if they're a good match.
+              </p>
+
+              {/* Add Skill Form */}
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Skill
+                    </label>
+                    <select
+                      value={selectedSkillId}
+                      onChange={(e) => setSelectedSkillId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    >
+                      <option value="">Select a skill</option>
+                      {skills.map((skill) => (
+                        <option key={skill.id} value={skill.id}>
+                          {skill.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Required Level
+                    </label>
+                    <select
+                      value={selectedLevel}
+                      onChange={(e) => setSelectedLevel(e.target.value as 'beginner' | 'intermediate' | 'expert')}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                    >
+                      <option value="beginner">Beginner</option>
+                      <option value="intermediate">Intermediate</option>
+                      <option value="expert">Expert</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={addRequiredSkill}
+                      disabled={!selectedSkillId}
+                      className="w-full px-4 py-2 text-sm font-medium text-white bg-green-600 border border-transparent rounded-md shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Add Skill
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Required Skills List */}
+              {requiredSkills.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Required Skills:</h4>
+                  <div className="space-y-2">
+                    {requiredSkills.map((skill, index) => (
+                      <div key={index} className="flex items-center justify-between bg-blue-50 px-3 py-2 rounded-md">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-medium text-blue-900">{getSkillName(skill.skillId)}</span>
+                          <span className="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">
+                            {skill.requiredLevel}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeRequiredSkill(skill.skillId)}
+                          className="text-red-600 hover:text-red-800 text-sm font-medium"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
 

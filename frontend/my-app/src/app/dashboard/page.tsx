@@ -27,14 +27,20 @@ export default function DashboardPage() {
   }, [loading, isAuthenticated, router]);
 
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && user.role) {
       fetchDashboardStats();
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, user?.role]);
 
   const fetchDashboardStats = async () => {
     try {
       setStatsLoading(true);
+      
+      // Double-check user and role exist
+      if (!user || !user.role) {
+        console.error('User or role not available');
+        return;
+      }
       
       // Fetch skills (for both roles)
       const skillsPromise = usersApi.getMySkills();
@@ -44,7 +50,7 @@ export default function DashboardPage() {
       
       // Fetch applications or projects based on role
       let applicationsOrProjectsPromise;
-      if (user?.role === 'leader') {
+      if (user.role === 'leader') {
         applicationsOrProjectsPromise = projectsApi.getMyProjects();
       } else {
         applicationsOrProjectsPromise = projectsApi.getMyApplications();
@@ -56,16 +62,23 @@ export default function DashboardPage() {
         applicationsOrProjectsPromise,
       ]);
 
-
-
       setStats({
         skills: skills.length,
         teams: teams.length,
-        applications: user?.role === 'freelancer' ? applicationsOrProjects.length : 0,
-        projects: user?.role === 'leader' ? applicationsOrProjects.length : 0,
+        applications: user.role === 'freelancer' ? applicationsOrProjects.length : 0,
+        projects: user.role === 'leader' ? applicationsOrProjects.length : 0,
       });
     } catch (error) {
       console.error('Error fetching dashboard stats:', error);
+      // More specific error handling based on role
+      if (user?.role === 'leader') {
+        // For leaders, if there's an error, set defaults
+        setStats(prev => ({
+          ...prev,
+          projects: 0,
+          applications: 0
+        }));
+      }
     } finally {
       setStatsLoading(false);
     }
@@ -96,7 +109,9 @@ export default function DashboardPage() {
             Welcome back, {user?.username}!
           </h1>
           <p className="mt-2 text-gray-600">
-            Here's what's happening with your projects and applications.
+            {user?.role === 'leader' 
+              ? "Here's what's happening with your projects and teams."
+              : "Here's what's happening with your applications and teams."}
           </p>
         </div>
 
@@ -184,7 +199,7 @@ export default function DashboardPage() {
         {/* Quick Actions */}
         <div className="mt-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${user?.role === 'leader' ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
             {user?.role === 'leader' ? (
               <>
                 <Link
@@ -198,6 +213,12 @@ export default function DashboardPage() {
                   className="bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors text-center"
                 >
                   My Projects
+                </Link>
+                <Link
+                  href="/applications"
+                  className="bg-orange-600 text-white px-4 py-3 rounded-lg hover:bg-orange-700 transition-colors text-center"
+                >
+                  Applications
                 </Link>
                 <Link
                   href="/teams"

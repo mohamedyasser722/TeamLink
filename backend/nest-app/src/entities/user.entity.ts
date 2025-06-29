@@ -9,6 +9,7 @@ import { UserSkill } from './user-skill.entity';
 import { Project } from './project.entity';
 import { Application } from './application.entity';
 import { Team } from './team.entity';
+import { Rating } from './rating.entity';
 
 @Entity('users')
 export class User {
@@ -51,4 +52,10 @@ export class User {
 
   @OneToMany(() => Team, (team) => team.user)
   teamMemberships: Team[];
+
+  @OneToMany(() => Rating, (rating) => rating.rater)
+  givenRatings: Rating[];
+
+  @OneToMany(() => Rating, (rating) => rating.ratedUser)
+  receivedRatings: Rating[];
 } 

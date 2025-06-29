@@ -16,9 +16,12 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dtos/create-project.dto';
 import { UpdateProjectDto } from './dtos/update-project.dto';
 import { UpdateApplicationStatusDto } from './dtos/update-application-status.dto';
+import { CreateRatingDto } from './dtos/create-rating.dto';
+import { ProjectMatchDto } from './dtos/project-match.dto';
 import { BaseResponse } from '../common/dto/base.response';
 import { Project } from '../entities/project.entity';
 import { Application } from '../entities/application.entity';
+import { Rating } from '../entities/rating.entity';
 import { UserRole } from '../auth/enums/user-roles.enum';
 
 @ApiTags('projects')
@@ -67,6 +70,17 @@ export class ProjectsController {
   async getMyApplications(@AuthenticatedUser() keycloakUser: any): Promise<BaseResponse<Application[]>> {
     const applications = await this.projectsService.getMyApplications(keycloakUser);
     return BaseResponse.success(applications, 'My applications retrieved successfully');
+  }
+
+  @Get('recommended')
+  @Roles({ roles: ['freelancer'] })
+  @ApiOperation({ summary: 'Get recommended projects based on skills (Freelancers only)' })
+  @ApiResponse({ status: 200, description: 'Recommended projects retrieved successfully' })
+  async getRecommendedProjects(
+    @AuthenticatedUser() keycloakUser: any,
+  ): Promise<BaseResponse<ProjectMatchDto[]>> {
+    const projects = await this.projectsService.getRecommendedProjects(keycloakUser);
+    return BaseResponse.success(projects, 'Recommended projects retrieved successfully');
   }
 
   @Get(':id')
@@ -162,4 +176,48 @@ export class ProjectsController {
     );
     return BaseResponse.success(application, 'Application status updated successfully');
   }
+
+  @Put(':id/complete')
+  @Roles({ roles: ['leader'] })
+  @ApiOperation({ summary: 'Mark project as completed (Leaders only)' })
+  @ApiResponse({ status: 200, description: 'Project marked as completed' })
+  @ApiResponse({ status: 403, description: 'You can only complete your own projects' })
+  @ApiResponse({ status: 400, description: 'Only projects in progress can be completed' })
+  async completeProject(
+    @Param('id', ParseUUIDPipe) id: string,
+    @AuthenticatedUser() keycloakUser: any,
+  ): Promise<BaseResponse<Project>> {
+    const project = await this.projectsService.completeProject(id, keycloakUser);
+    return BaseResponse.success(project, 'Project marked as completed');
+  }
+
+  @Post(':id/rate')
+  @Roles({ roles: ['leader'] })
+  @ApiOperation({ summary: 'Rate a team member after project completion (Leaders only)' })
+  @ApiResponse({ status: 201, description: 'Rating submitted successfully' })
+  @ApiResponse({ status: 403, description: 'You can only rate users on your own projects' })
+  @ApiResponse({ status: 400, description: 'Can only rate after project completion' })
+  async rateUser(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() createRatingDto: CreateRatingDto,
+    @AuthenticatedUser() keycloakUser: any,
+  ): Promise<BaseResponse<Rating>> {
+    const rating = await this.projectsService.rateUser(id, createRatingDto, keycloakUser);
+    return BaseResponse.success(rating, 'Rating submitted successfully');
+  }
+
+  @Get(':id/ratings')
+  @Roles({ roles: ['leader'] })
+  @ApiOperation({ summary: 'Get all ratings for a project (Leaders only)' })
+  @ApiResponse({ status: 200, description: 'Ratings retrieved successfully' })
+  @ApiResponse({ status: 403, description: 'You can only view ratings for your own projects' })
+  async getProjectRatings(
+    @Param('id', ParseUUIDPipe) id: string,
+    @AuthenticatedUser() keycloakUser: any,
+  ): Promise<BaseResponse<Rating[]>> {
+    const ratings = await this.projectsService.getProjectRatings(id, keycloakUser);
+    return BaseResponse.success(ratings, 'Ratings retrieved successfully');
+  }
+
+
 } 

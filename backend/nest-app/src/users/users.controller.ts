@@ -15,6 +15,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dtos/update-profile.dto';
 import { AddSkillDto } from './dtos/add-skill.dto';
+import { UserProfileDto } from './dtos/user-profile.dto';
 import { BaseResponse } from '../common/dto/base.response';
 import { User } from '../entities/user.entity';
 import { UserSkill } from '../entities/user-skill.entity';
@@ -78,6 +79,17 @@ export class UsersController {
   ): Promise<BaseResponse<User>> {
     const user = await this.usersService.findUserById(id);
     return BaseResponse.success(user, 'User retrieved successfully');
+  }
+
+  @Get(':id/profile')
+  @ApiOperation({ summary: 'Get detailed user profile including ratings' })
+  @ApiResponse({ status: 200, description: 'User profile retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  async getUserProfile(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<BaseResponse<UserProfileDto>> {
+    const profile = await this.usersService.getUserProfile(id);
+    return BaseResponse.success(profile, 'User profile retrieved successfully');
   }
 
   @Get('skills/my-skills')

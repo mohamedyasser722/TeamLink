@@ -5,6 +5,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { UserSkill } from './user-skill.entity';
+import { ProjectSkill } from './project-skill.entity';
 
 @Entity('skills')
 export class Skill {
@@ -17,4 +18,7 @@ export class Skill {
   // Relationships
   @OneToMany(() => UserSkill, (userSkill) => userSkill.skill)
   userSkills: UserSkill[];
+
+  @OneToMany(() => ProjectSkill, (projectSkill) => projectSkill.skill)
+  projectSkills: ProjectSkill[];
 } 

@@ -6,8 +6,10 @@ import {
   Skill,
   UserSkill,
   Project,
+  ProjectSkill,
   Application,
   Team,
+  Rating,
 } from '../entities/index';
 import { SkillLevel } from '../entities/enums/skill-level.enum';
 import { ProjectStatus } from '../entities/enums/project-status.enum';
@@ -25,10 +27,14 @@ export class SeederService {
     private userSkillRepository: Repository<UserSkill>,
     @InjectRepository(Project)
     private projectRepository: Repository<Project>,
+    @InjectRepository(ProjectSkill)
+    private projectSkillRepository: Repository<ProjectSkill>,
     @InjectRepository(Application)
     private applicationRepository: Repository<Application>,
     @InjectRepository(Team)
     private teamRepository: Repository<Team>,
+    @InjectRepository(Rating)
+    private ratingRepository: Repository<Rating>,
     private logger: LoggerService,
   ) {}
 
@@ -44,8 +50,10 @@ export class SeederService {
       const users = await this.seedUsers();
       await this.seedUserSkills(users, skills);
       const projects = await this.seedProjects(users);
+      await this.seedProjectSkills(projects, skills);
       await this.seedApplications(users, projects);
       await this.seedTeams(users, projects);
+      await this.seedRatings(users, projects);
 
       this.logger.log('Database seeding completed successfully!', 'SeederService');
     } catch (error) {
@@ -58,8 +66,10 @@ export class SeederService {
     this.logger.log('Clearing existing data...', 'SeederService');
     
     // Delete in reverse order of dependencies using query builder
+    await this.ratingRepository.createQueryBuilder().delete().execute();
     await this.teamRepository.createQueryBuilder().delete().execute();
     await this.applicationRepository.createQueryBuilder().delete().execute();
+    await this.projectSkillRepository.createQueryBuilder().delete().execute();
     await this.userSkillRepository.createQueryBuilder().delete().execute();
     await this.projectRepository.createQueryBuilder().delete().execute();
     await this.skillRepository.createQueryBuilder().delete().execute();
@@ -346,14 +356,138 @@ export class SeederService {
     await this.teamRepository.save(teams);
   }
 
+  private async seedProjectSkills(projects: Project[], skills: Skill[]): Promise<void> {
+    this.logger.log('Seeding project skills...', 'SeederService');
+
+    const projectSkillsData = [
+      // === E-Commerce Platform (owned by yassen722) ===
+      { project: projects[0], skill: skills[0], requiredLevel: SkillLevel.EXPERT }, // JavaScript
+      { project: projects[0], skill: skills[1], requiredLevel: SkillLevel.INTERMEDIATE }, // TypeScript
+      { project: projects[0], skill: skills[2], requiredLevel: SkillLevel.EXPERT }, // React
+      { project: projects[0], skill: skills[3], requiredLevel: SkillLevel.EXPERT }, // Node.js
+      { project: projects[0], skill: skills[7], requiredLevel: SkillLevel.INTERMEDIATE }, // MySQL
+
+      // === Mobile Fitness App (owned by yassen722) ===
+      { project: projects[1], skill: skills[11], requiredLevel: SkillLevel.EXPERT }, // Mobile Development
+      { project: projects[1], skill: skills[2], requiredLevel: SkillLevel.INTERMEDIATE }, // React
+      { project: projects[1], skill: skills[6], requiredLevel: SkillLevel.EXPERT }, // UI/UX Design
+      { project: projects[1], skill: skills[0], requiredLevel: SkillLevel.INTERMEDIATE }, // JavaScript
+
+      // === Educational Platform (owned by yassen722) ===
+      { project: projects[2], skill: skills[0], requiredLevel: SkillLevel.EXPERT }, // JavaScript
+      { project: projects[2], skill: skills[2], requiredLevel: SkillLevel.EXPERT }, // React
+      { project: projects[2], skill: skills[3], requiredLevel: SkillLevel.EXPERT }, // Node.js
+      { project: projects[2], skill: skills[8], requiredLevel: SkillLevel.INTERMEDIATE }, // PostgreSQL
+
+      // === AI-Powered Analytics Dashboard (owned by mike_chen) ===
+      { project: projects[3], skill: skills[4], requiredLevel: SkillLevel.EXPERT }, // Python
+      { project: projects[3], skill: skills[14], requiredLevel: SkillLevel.EXPERT }, // Machine Learning
+      { project: projects[3], skill: skills[8], requiredLevel: SkillLevel.INTERMEDIATE }, // PostgreSQL
+      { project: projects[3], skill: skills[10], requiredLevel: SkillLevel.INTERMEDIATE }, // AWS
+
+      // === Microservices Architecture Migration (owned by mike_chen) ===
+      { project: projects[4], skill: skills[9], requiredLevel: SkillLevel.EXPERT }, // Docker
+      { project: projects[4], skill: skills[10], requiredLevel: SkillLevel.EXPERT }, // AWS
+      { project: projects[4], skill: skills[13], requiredLevel: SkillLevel.EXPERT }, // DevOps
+      { project: projects[4], skill: skills[4], requiredLevel: SkillLevel.INTERMEDIATE }, // Python
+
+      // === IoT Smart Home System (owned by mike_chen) ===
+      { project: projects[5], skill: skills[11], requiredLevel: SkillLevel.EXPERT }, // Mobile Development
+      { project: projects[5], skill: skills[4], requiredLevel: SkillLevel.INTERMEDIATE }, // Python
+      { project: projects[5], skill: skills[10], requiredLevel: SkillLevel.BEGINNER }, // AWS
+    ];
+
+    const projectSkills = this.projectSkillRepository.create(projectSkillsData);
+    await this.projectSkillRepository.save(projectSkills);
+  }
+
+  private async seedRatings(users: User[], projects: Project[]): Promise<void> {
+    this.logger.log('Seeding ratings...', 'SeederService');
+
+    // Note: Only ratings for completed projects or projects with established teams
+    const ratingsData = [
+      // === Ratings from yassen722 (LEADER) for his team members ===
+      
+      // Rating mohamed722 for E-Commerce Platform work
+      {
+        rater: users[0], // yassen722 (LEADER)
+        ratedUser: users[2], // mohamed722 (FREELANCER)
+        project: projects[0], // E-Commerce Platform
+        rating: 5,
+        comment: 'Excellent full-stack developer! Mohamed delivered high-quality code on time and was very communicative throughout the project. Highly recommended for React and Node.js projects.',
+      },
+
+      // Rating alex_rodriguez for Mobile Fitness App work
+      {
+        rater: users[0], // yassen722 (LEADER)
+        ratedUser: users[4], // alex_rodriguez (FREELANCER)
+        project: projects[1], // Mobile Fitness App
+        rating: 4,
+        comment: 'Great mobile developer with solid React Native skills. Alex created intuitive user interfaces and handled complex mobile-specific requirements well.',
+      },
+
+      // Rating mohamed722 for Educational Platform work
+      {
+        rater: users[0], // yassen722 (LEADER)
+        ratedUser: users[2], // mohamed722 (FREELANCER)
+        project: projects[2], // Educational Platform
+        rating: 5,
+        comment: 'Outstanding performance once again! Mohamed consistently delivers excellent results and is a pleasure to work with. Strong technical skills and great team player.',
+      },
+
+      // === Ratings from mike_chen (LEADER) for his team members ===
+      
+      // Rating lisa_kim for AI Analytics Dashboard work
+      {
+        rater: users[1], // mike_chen (LEADER)
+        ratedUser: users[5], // lisa_kim (FREELANCER)
+        project: projects[3], // AI Analytics Dashboard
+        rating: 5,
+        comment: 'Exceptional ML engineer! Lisa implemented complex machine learning algorithms with great efficiency. Her insights and technical expertise were invaluable to the project.',
+      },
+
+      // Rating david_johnson for Microservices Migration work
+      {
+        rater: users[1], // mike_chen (LEADER)
+        ratedUser: users[6], // david_johnson (FREELANCER)
+        project: projects[4], // Microservices Migration
+        rating: 4,
+        comment: 'Solid DevOps engineer with strong Docker and AWS knowledge. David successfully handled the complex migration and set up robust CI/CD pipelines.',
+      },
+
+      // Rating mohamed722 for Microservices Migration work
+      {
+        rater: users[1], // mike_chen (LEADER)
+        ratedUser: users[2], // mohamed722 (FREELANCER)
+        project: projects[4], // Microservices Migration
+        rating: 4,
+        comment: 'Great backend developer who adapted well to our microservices architecture. Mohamed wrote clean, maintainable code and collaborated effectively with the DevOps team.',
+      },
+
+      // Rating alex_rodriguez for IoT Smart Home System work
+      {
+        rater: users[1], // mike_chen (LEADER)
+        ratedUser: users[4], // alex_rodriguez (FREELANCER)
+        project: projects[5], // IoT Smart Home System
+        rating: 5,
+        comment: 'Excellent mobile developer who created an intuitive and responsive IoT control app. Alex understood the complex IoT requirements and delivered a polished product.',
+      },
+    ];
+
+    const ratings = this.ratingRepository.create(ratingsData);
+    await this.ratingRepository.save(ratings);
+  }
+
   async getSeederStats(): Promise<any> {
     const stats = {
       users: await this.userRepository.count(),
       skills: await this.skillRepository.count(),
       userSkills: await this.userSkillRepository.count(),
       projects: await this.projectRepository.count(),
+      projectSkills: await this.projectSkillRepository.count(),
       applications: await this.applicationRepository.count(),
       teams: await this.teamRepository.count(),
+      ratings: await this.ratingRepository.count(),
     };
 
     return stats;

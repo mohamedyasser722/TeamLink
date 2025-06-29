@@ -1,5 +1,7 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength, IsArray, ValidateNested } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
+import { ProjectSkillDto } from './project-skill.dto';
 
 export class CreateProjectDto {
   @ApiProperty({
@@ -19,4 +21,15 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    description: 'Required skills for the project',
+    type: [ProjectSkillDto],
+    required: false,
+  })
+  @IsArray()
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ProjectSkillDto)
+  requiredSkills?: ProjectSkillDto[];
 } 

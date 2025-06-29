@@ -1,8 +1,17 @@
+export interface ProjectSkill {
+  skillId: string;
+  requiredLevel: 'beginner' | 'intermediate' | 'expert';
+  skill: {
+    id: string;
+    name: string;
+  };
+}
+
 export interface Project {
   id: string;
   title: string;
   description: string;
-  status: 'open' | 'closed' | 'in_progress';
+  status: 'open' | 'closed' | 'in_progress' | 'completed';
   createdAt: string;
   owner?: {
     id: string;
@@ -13,6 +22,7 @@ export interface Project {
   ownerId?: string;
   applications?: Application[];
   team?: TeamMember[];
+  projectSkills?: ProjectSkill[];
 }
 
 export interface Application {
@@ -32,7 +42,7 @@ export interface Application {
     id: string;
     title: string;
     description: string;
-    status: 'open' | 'closed' | 'in_progress';
+    status: 'open' | 'closed' | 'in_progress' | 'completed';
     createdAt: string;
     owner: {
       id: string;
@@ -69,7 +79,7 @@ export interface TeamMembership {
     id: string;
     title: string;
     description: string;
-    status: 'open' | 'closed' | 'in_progress';
+    status: 'open' | 'closed' | 'in_progress' | 'completed';
     createdAt: string;
     owner: {
       id: string;

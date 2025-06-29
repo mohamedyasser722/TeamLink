@@ -111,6 +111,37 @@ export const projectsApi = {
   async updateApplicationStatus(projectId: string, applicationId: string, statusData: { status: string; roleTitle?: string }) {
     const response = await api.put(`/projects/${projectId}/applications/${applicationId}/status`, statusData);
     return response.data.data;
+  },
+
+  // New features
+  async completeProject(projectId: string) {
+    const response = await api.put(`/projects/${projectId}/complete`);
+    return response.data.data;
+  },
+
+  async rateUser(projectId: string, ratingData: { ratedUserId: string; rating: number; comment?: string }) {
+    const response = await api.post(`/projects/${projectId}/rate`, ratingData);
+    return response.data.data;
+  },
+
+  async getProjectRatings(projectId: string) {
+    const response = await api.get(`/projects/${projectId}/ratings`);
+    return response.data.data;
+  },
+
+  async getRecommendedProjects() {
+    const response = await api.get('/projects/recommended');
+    return response.data.data;
+  },
+
+  // Updated create project to support required skills
+  async createProjectWithSkills(projectData: { 
+    title: string; 
+    description: string; 
+    requiredSkills?: Array<{ skillId: string; requiredLevel: 'beginner' | 'intermediate' | 'expert' }> 
+  }) {
+    const response = await api.post('/projects', projectData);
+    return response.data.data;
   }
 };
 
@@ -163,6 +194,12 @@ export const usersApi = {
   async removeSkill(skillId: string) {
     const response = await api.delete(`/users/skills/${skillId}`);
     return response.data;
+  },
+
+  // New feature: Get detailed user profile with ratings
+  async getUserProfile(userId: string) {
+    const response = await api.get(`/users/${userId}/profile`);
+    return response.data.data;
   }
 };
 

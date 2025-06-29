@@ -10,6 +10,8 @@ import {
 import { User } from './user.entity';
 import { Application } from './application.entity';
 import { Team } from './team.entity';
+import { ProjectSkill } from './project-skill.entity';
+import { Rating } from './rating.entity';
 import { ProjectStatus } from './enums/project-status.enum';
 
 @Entity('projects')
@@ -48,4 +50,10 @@ export class Project {
 
   @OneToMany(() => Team, (team) => team.project)
   team: Team[];
+
+  @OneToMany(() => ProjectSkill, (projectSkill) => projectSkill.project)
+  projectSkills: ProjectSkill[];
+
+  @OneToMany(() => Rating, (rating) => rating.project)
+  ratings: Rating[];
 } 

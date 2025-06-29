@@ -54,14 +54,28 @@ export default function Navigation() {
                   >
                     My Projects
                   </Link>
+                  <Link
+                    href="/applications"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Applications
+                  </Link>
                 </>
               ) : (
-                <Link
-                  href="/applications"
-                  className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                >
-                  My Applications
-                </Link>
+                <>
+                  <Link
+                    href="/projects/recommended"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    Recommended
+                  </Link>
+                  <Link
+                    href="/applications"
+                    className="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                  >
+                    My Applications
+                  </Link>
+                </>
               )}
               <Link
                 href="/teams"
