@@ -37,9 +37,16 @@ export class UsersController {
     const user = await this.usersService.getOrCreateUser(keycloakUser);
     const userInfo = this.keycloakService.extractUserInfo(keycloakUser);
     
-    // Determine role based on Keycloak roles
+    // Determine role based on Keycloak roles (realm or client-level)
     let role = 'freelancer'; // default
-    if (userInfo?.roles?.includes('leader')) {
+
+    const clientId = this.keycloakService['clientId']; // access private via bracket, acceptable in JS/TS
+
+    const hasLeaderRole =
+      userInfo?.roles?.includes('leader') ||
+      userInfo?.resourceAccess?.[clientId]?.roles?.includes('leader');
+
+    if (hasLeaderRole) {
       role = 'leader';
     }
     
