@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import NotificationBell from './NotificationBell';
 
 export default function Navigation() {
   const { user, logout, isAuthenticated } = useAuth();
@@ -87,6 +88,7 @@ export default function Navigation() {
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
             <div className="flex items-center space-x-4">
+              <NotificationBell />
               <span className="text-sm text-gray-700">
                 Welcome, {user?.username}
               </span>

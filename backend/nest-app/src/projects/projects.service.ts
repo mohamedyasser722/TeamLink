@@ -16,6 +16,7 @@ import { ApplicationStatus } from '../entities/enums/application-status.enum';
 import { ProjectStatus } from '../entities/enums/project-status.enum';
 import { SkillLevel } from '../entities/enums/skill-level.enum';
 import { UsersService } from '../users/users.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ProjectsService {
@@ -33,6 +34,7 @@ export class ProjectsService {
     @InjectRepository(UserSkill)
     private userSkillRepository: Repository<UserSkill>,
     private usersService: UsersService,
+    private notificationsService: NotificationsService,
   ) {}
 
   async createProject(createProjectDto: CreateProjectDto, keycloakUser: any): Promise<Project> {
@@ -238,7 +240,18 @@ export class ProjectsService {
       userId: user.id,
     });
 
-    return this.applicationRepository.save(application);
+    const savedApplication = await this.applicationRepository.save(application);
+
+    // Send notification to project owner
+    await this.notificationsService.notifyApplicationReceived(
+      project.ownerId,
+      user.username,
+      project.title,
+      projectId,
+      savedApplication.id,
+    );
+
+    return savedApplication;
   }
 
   async getProjectApplications(projectId: string, keycloakUser: any): Promise<Application[]> {
@@ -307,6 +320,21 @@ export class ProjectsService {
         });
         await this.teamRepository.save(teamMember);
       }
+
+      // Send notification to the freelancer
+      await this.notificationsService.notifyApplicationAccepted(
+        application.userId,
+        project.title,
+        projectId,
+        roleTitle,
+      );
+    } else if (updateDto.status === ApplicationStatus.REJECTED) {
+      // Send notification to the freelancer
+      await this.notificationsService.notifyApplicationRejected(
+        application.userId,
+        project.title,
+        projectId,
+      );
     }
 
     return updatedApplication;

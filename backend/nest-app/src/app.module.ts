@@ -12,6 +12,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { UsersModule } from './users/users.module';
 import { SkillsModule } from './skills/skills.module';
 import { TeamsModule } from './teams/teams.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { TeamsModule } from './teams/teams.module';
     UsersModule,
     SkillsModule,
     TeamsModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [],

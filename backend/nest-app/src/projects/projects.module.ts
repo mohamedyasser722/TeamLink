@@ -9,11 +9,13 @@ import { ProjectSkill } from '../entities/project-skill.entity';
 import { Rating } from '../entities/rating.entity';
 import { UserSkill } from '../entities/user-skill.entity';
 import { UsersModule } from '../users/users.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Project, Application, Team, ProjectSkill, Rating, UserSkill]),
     UsersModule,
+    NotificationsModule,
   ],
   controllers: [ProjectsController],
   providers: [ProjectsService],
